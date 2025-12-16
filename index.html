@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart EMI — Home + News + CTA</title>
+  <style>
+    :root{
+      --bg-1:#0b0e17;
+      --panel:#111425;
+      --muted:#bfc8d6;
+      --accent:#7f63ff;
+      --accent2:#6fb7ff;
+      --card-border: rgba(255,255,255,0.06);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,Arial,system-ui; -webkit-font-smoothing:antialiased}
+    body{background:linear-gradient(180deg,var(--bg-1),#0d1116);color:var(--muted);line-height:1.45}
+
+    /* sticky header */
+    .site-header{
+      position:sticky; top:12px; z-index:60;
+      margin:12px 18px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; padding:10px 18px;
+      background: linear-gradient(90deg, rgba(17,20,36,0.92), rgba(22,18,40,0.92));
+      border-radius:10px; border:1px solid rgba(255,255,255,0.03);
+      box-shadow: 0 10px 30px rgba(6,8,20,0.6);
+    }
+
+    .left-actions{display:flex;gap:8px;align-items:center}
+    .btn{
+      padding:7px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);
+      background:transparent;color:var(--muted);cursor:pointer;font-weight:600;
+      display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+    }
+    .btn.primary{background:linear-gradient(90deg,var(--accent), #a892ff);color:#fff;border:none;box-shadow:0 10px 30px rgba(127,99,255,0.12)}
+
+    .brand{display:flex;align-items:center;gap:12px;flex:1;justify-content:center}
+    .logo-box{width:44px;height:44px;border-radius:10px;background:#fff;display:grid;place-items:center;color:var(--accent);font-weight:700}
+    .brand .title{font-family:"Playfair Display", serif;color:var(--accent);font-weight:700;font-size:18px}
+
+    .nav{display:flex;gap:12px;align-items:center}
+    .nav a{color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:10px;font-weight:600}
+    .nav a.pill{background:linear-gradient(90deg,#5f49d9,#a68fff);color:#fff;box-shadow:0 8px 28px rgba(99,75,255,0.12)}
+
+    /* page wrapper */
+    .wrap{max-width:1180px;margin:20px auto;padding:6px 18px 80px 18px}
+
+    /* FEATURES */
+    .features{padding:18px 0 8px}
+    .features-title{font-family:"Playfair Display", serif;color:#fff;font-size:24px;margin:6px 0 18px}
+    .feature-grid{display:grid; grid-template-columns: repeat(3,1fr); gap:22px}
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.008));
+      border-radius:14px; padding:20px; border:1px solid var(--card-border);
+      min-height:150px; display:flex; flex-direction:column; gap:12px;
+      box-shadow: 0 12px 30px rgba(4,6,12,0.6);
+      transition: transform .18s ease, box-shadow .18s ease;
+      cursor:pointer;
+    }
+    .card:hover{transform:translateY(-6px); box-shadow: 0 28px 60px rgba(6,8,20,0.7)}
+    .card .icon{width:56px;height:56px;border-radius:12px;background:#fff;display:grid;place-items:center;color:#111;font-size:20px;box-shadow: 0 8px 18px rgba(2,2,6,0.45)}
+    .card h3{margin:0;font-family:"Playfair Display", serif;color:#fff;font-size:18px}
+    .card p{margin:0;color:rgba(255,255,255,0.72);font-size:13px}
+
+    /* KPI row */
+    .kpi-wrap{margin-top:28px;display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+    .kpi{min-width:180px;padding:18px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);text-align:center;box-shadow: 0 10px 30px rgba(0,0,0,0.55)}
+    .kpi .val{font-family:"Playfair Display", serif;color:#fff;font-size:26px}
+    .kpi .lab{font-size:12px;letter-spacing:2px;color:rgba(255,255,255,0.65)}
+
+    /* NEWS */
+    .news-section{margin-top:48px}
+    .news-title{font-family:"Playfair Display", serif;color:#fff;font-size:22px;margin:14px 0}
+    .news-grid{display:grid; grid-template-columns: repeat(3,1fr); gap:22px}
+    .news-card{background:var(--panel); border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.04); box-shadow: 0 10px 30px rgba(0,0,0,0.55); display:flex; flex-direction:column; cursor:pointer}
+    .news-card img{width:100%; height:190px; object-fit:cover; display:block}
+    .news-body{padding:14px; display:flex; flex-direction:column; gap:8px; flex:1}
+    .news-meta{font-size:12px;color:#9aa0b1;display:flex;gap:8px;align-items:center}
+    .news-body h3{margin:4px 0;color:#fff;font-size:16px;font-family:"Playfair Display",serif}
+    .news-body p.desc{margin:0;color:rgba(255,255,255,0.68);font-size:13px;flex:1}
+    .read-row{display:flex;justify-content:flex-start;align-items:center;gap:10px;margin-top:8px}
+    .read-btn{padding:8px 12px;border-radius:10px;background:linear-gradient(90deg,var(--accent2),var(--accent));border:none;color:#012;background-size:200% 100%;font-weight:700;cursor:pointer}
+
+    /* REFRESH PILL */
+    .refresh-wrap{display:flex;justify-content:center;margin:26px 0}
+    .refresh-pill{padding:8px 14px;border-radius:20px;background:linear-gradient(90deg,#c6b8ff,#a0e0ff);border:none;cursor:pointer;font-weight:700;color:#06223a;box-shadow:0 8px 24px rgba(0,0,0,0.45) }
+
+    /* CTA BANNER */
+    .cta-wrap{margin-top:26px;border-radius:12px;overflow:hidden}
+    .cta{
+      padding:36px; border-radius:12px;
+      background: linear-gradient(90deg, #7b61ff 0%, #57b9ff 50%, #b0d48a 100%);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+      color:#05212a;
+    }
+    .cta h2{margin:0;font-family:"Playfair Display",serif;color:#071423;font-size:28px}
+    .cta p{margin:0;color:rgba(2,10,18,0.7);max-width:780px;text-align:center}
+    .cta-actions{display:flex;gap:14px;margin-top:6px;align-items:center}
+    .cta-btn{
+      padding:12px 18px;border-radius:12px;border:1px solid rgba(255,255,255,0.18);font-weight:700;cursor:pointer;
+      background:linear-gradient(90deg,#d9c6ff,#bda6ff);
+      color:#03142a;
+      box-shadow: 0 10px 30px rgba(6,8,20,0.12);
+      display:inline-flex;align-items:center;gap:10px;
+      text-decoration:none;
+    }
+    .cta-btn.ghost{
+      background:transparent;border:1px solid rgba(255,255,255,0.35);color:#fff;
+      background-clip: padding-box;
+      padding:12px 20px; border-radius:12px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .tip {text-align:center;margin-top:18px;color:rgba(255,255,255,0.35);font-size:13px}
+
+    /* slide panel & modal */
+    .overlay {
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:200;
+      background:linear-gradient(180deg, rgba(2,6,12,0.6), rgba(2,6,12,0.8));
+      padding:18px;
+    }
+    .overlay.show{display:flex}
+    .modal {
+      width:100%; max-width:720px; background:linear-gradient(180deg,#0f1720,#0b1118); border-radius:12px; padding:18px; border:1px solid rgba(255,255,255,0.06); color:var(--muted);
+      box-shadow:0 30px 80px rgba(0,0,0,0.8);
+    }
+    .modal h3{color:#fff;margin-top:0;font-family:"Playfair Display",serif}
+    .modal p{color:rgba(255,255,255,0.72)}
+    .modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+    .close-x{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:18px}
+
+    /* responsive */
+    @media (max-width:1000px){.feature-grid, .news-grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:640px){
+      .site-header{flex-direction:column;align-items:stretch;gap:8px}
+      .feature-grid, .news-grid{grid-template-columns:1fr}
+      .cta{padding:28px}
+      .cta h2{font-size:22px}
+    }
+  </style>
+</head>
+<body>
+<header class="site-header" role="banner">
+
+  <!-- BRAND moved to LEFT -->
+  <div class="brand" role="heading" aria-level="1" style="justify-content:flex-start; flex:0;">
+    <div class="logo-box">▢</div>
+    <div class="title">SmartEMI</div>
+  </div>
+
+  <!-- CENTER NAVIGATION -->
+  <nav class="nav" aria-label="Main nav" style="flex:1; display:flex; justify-content:center;">
+      <a href="#calculator" onclick="location.href='login.html'; return false;">Calculator</a>
+      <a href="#news" onclick="location.href='login.html'; return false;">Latest News</a>
+      <a href="#posts" onclick="location.href='login.html'; return false;">Posts</a>
+  </nav>
+
+  <!-- RIGHT SIDE BUTTONS -->
+  <div style="position:relative;display:flex;align-items:center;gap:12px">
+
+      <button id="notifBtn" class="btn" title="Notifications">🔔</button>
+
+      <a id="createBtn" class="btn primary" href="create-account.html">+ Create</a>
+
+      <!-- visible if NOT logged in -->
+      <a id="loginBtn" class="btn" href="login.html">🔐 Login</a>
+
+      <!-- visible ONLY when logged in -->
+      <button id="avatarBtn" class="account-avatar" style="display:none">A</button>
+  </div>
+
+</header>
+
+  <!-- page content -->
+  <div class="wrap">
+
+    <!-- FEATURES -->
+    <section class="features" id="home">
+      <div class="features-title">Features</div>
+      <div class="feature-grid" id="featureGrid">
+        <!-- data-href can be a page to open when logged in -->
+        <article class="card" data-feature="EMI Calculator" data-desc="Compute monthly installment, total interest, and payoff timeline precisely." data-href="#calculator"><div class="icon">▣</div><h3>EMI Calculator</h3><p>Compute monthly installment, total interest, and payoff timeline precisely.</p></article>
+
+        <article class="card" data-feature="APR with Fees" data-desc="Add processing charges to view effective annual percentage rate." data-href="#apr"><div class="icon">⚡</div><h3>APR with Fees</h3><p>Add processing charges to view effective annual percentage rate.</p></article>
+
+        <article class="card" data-feature="One-click PDF" data-desc="Export schedules securely and review them anytime." data-href="#pdf"><div class="icon">📄</div><h3>One-click PDF</h3><p>Export schedules securely and review them anytime.</p></article>
+
+        <article class="card" data-feature="Privacy" data-desc="Secure data design — calculations are kept transient." data-href="#privacy"><div class="icon">👤</div><h3>Privacy First</h3><p>Secure data design — calculations are kept transient.</p></article>
+
+        <article class="card" data-feature="Visual Insights" data-desc="Charts for principal vs interest and balance trajectory." data-href="#visuals"><div class="icon">📈</div><h3>Visual Insights</h3><p>Charts for principal vs interest and balance trajectory.</p></article>
+
+        <article class="card" data-feature="Responsive UI" data-desc="Optimized for both mobile and desktop devices." data-href="#responsive"><div class="icon">📱</div><h3>Responsive UI</h3><p>Optimized for both mobile and desktop devices.</p></article>
+      </div>
+
+      <div class="kpi-wrap" aria-hidden>
+        <div class="kpi"><div class="val">1,000+</div><div class="lab">SCHEDULES EXPORTED</div></div>
+        <div class="kpi"><div class="val">99.9%</div><div class="lab">UPTIME</div></div>
+        <div class="kpi"><div class="val">4</div><div class="lab">CORE TABLES</div></div>
+        <div class="kpi"><div class="val">🔒</div><div class="lab">SECURE BY DESIGN</div></div>
+      </div>
+    </section>
+
+    <!-- CTA BANNER -->
+    <div class="cta-wrap" aria-hidden>
+      <div class="cta" role="region" aria-label="Call to action">
+        <h2>Build smarter loan decisions today</h2>
+        <p>Join the community using our accurate and elegant EMI tools powered by Flask backend.</p>
+        <div class="cta-actions">
+          <!-- CTA buttons navigate to the pages -->
+          <a class="cta-btn" href="create-account.html" role="link" aria-label="Create account page"><span>👥</span> Create Account</a>
+          <a class="cta-btn ghost" href="login.html" role="link" aria-label="Login page">🔐 Login</a>
+        </div>
+      </div>
+      <div class="tip">Tip: Access Calculator from the top navigation anytime.</div>
+    </div>
+  </div><!-- wrap -->
+
+  <!-- Feature modal / overlay -->
+  <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal" role="document">
+      <button id="modalClose" class="close-x" aria-label="Close">✕</button>
+      <h3 id="modalTitle">Feature</h3>
+      <p id="modalDesc"></p>
+      <div class="actions">
+        <button id="modalUse" class="btn primary">Use feature</button>
+        <button id="modalLearn" class="btn">Learn more</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD (hidden until logged in) -->
+  <section id="dashboard" style="display:none; margin-top:24px;">
+    <div style="display:flex;gap:18px;align-items:flex-start">
+      <!-- LEFT: calculator form -->
+      <div style="flex:1;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)">
+        <h3 style="margin-top:0;color:#fff;font-family:'Playfair Display',serif">Welcome to your Dashboard</h3>
+        <p style="color:rgba(255,255,255,0.7)">Access calculators, saved PDFs, and browse loan categories.</p>
+
+        <div style="margin-top:12px">
+          <label>Loan Amount</label>
+          <input id="dashLoanAmount" type="number" value="1000000" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);color:#fff">
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <div style="flex:1">
+              <label>Interest % p.a.</label>
+              <input id="dashInterest" type="number" value="10.75" style="width:100%;padding:10px;border-radius:8px;">
+            </div>
+            <div style="width:120px">
+              <label>Tenure (yrs)</label>
+              <input id="dashTenure" type="number" value="5" style="width:100%;padding:10px;border-radius:8px;">
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <button id="dashCalculate" class="btn primary">Calculate</button>
+            <button id="dashDownload" class="btn" style="margin-left:8px">Download PDF</button>
+          </div>
+
+          <div style="margin-top:16px;color:#fff">
+            <strong>Loan EMI</strong>
+            <div id="dashEmi" style="font-size:20px;margin-top:6px">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: visual placeholders -->
+      <div style="width:460px;display:flex;flex-direction:column;gap:12px">
+        <div style="background:var(--panel);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.04);height:260px;display:flex;align-items:center;justify-content:center;color:#9aa0b1">
+          <!-- Replace with Chart.js or your graph code -->
+          [Graphs & Pie Chart here]
+        </div>
+
+        <div style="background:var(--panel);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.04)">
+          <div style="font-weight:700;color:#fff">Loan APR <span style="float:right">5.50%</span></div>
+          <div style="margin-top:8px;color:rgba(255,255,255,0.7)">Total Payment: <strong>₹13,07,077.22</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- schedule table -->
+    <div style="margin-top:18px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.01));padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)">
+      <h4 style="margin:0 0 8px;color:#fff">Schedule</h4>
+      <div style="color:rgba(255,255,255,0.7)">Showing EMI payments by year; use downloads for the full monthly schedule.</div>
+      <table style="width:100%;margin-top:12px;color:#fff;border-collapse:collapse">
+        <thead style="background:#0f1720">
+          <tr>
+            <th style="text-align:left;padding:8px">Year</th>
+            <th style="text-align:right;padding:8px">Principal (A)</th>
+            <th style="text-align:right;padding:8px">Interest (B)</th>
+            <th style="text-align:right;padding:8px">Total (A+B)</th>
+            <th style="text-align:right;padding:8px">Balance</th>
+          </tr>
+        </thead>
+        <tbody id="dashScheduleBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  
+    <!-- edit password mini-form -->
+    <div id="changePwdArea" style="display:none;margin-top:12px">
+      <label style="font-weight:700;font-size:13px">New password</label>
+      <input id="newPwd" class="small-input" type="password" placeholder="Enter new password"/>
+      <label style="font-weight:700;font-size:13px;margin-top:8px">Confirm</label>
+      <input id="confirmPwd" class="small-input" type="password" placeholder="Confirm new password"/>
+      <button id="changePwdBtn" class="small-btn">Change password</button>
+      <div id="pwdMsg" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <script>
+    // CONFIG
+    const API_BASE = "http://127.0.0.1:5000"; // adjust if needed for your backend
+    // --- NEWS API SETTINGS ---
+    // Replace with your News API key (e.g. from newsapi.org or GNews). If you plan to call from browser,
+    // you may need a server-side proxy to avoid CORS / exposing your key publicly.
+    const NEWS_API_KEY = ""; // <-- put your API KEY here if you have one
+    // Example endpoint for NewsAPI.org:
+    // https://newsapi.org/v2/everything?q=loan OR emi OR bank OR mortgage OR "home loan"&language=en&sortBy=publishedAt&pageSize=6&apiKey=YOUR_KEY
+    const NEWS_QUERY = encodeURIComponent('loan OR emi OR bank OR mortgage OR "home loan" OR "personal loan"');
+    const NEWS_PAGE_SIZE = 6;
+    const NEWS_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+
+    // header elements
+    const notifBtn = document.getElementById('notifBtn');
+    const createBtn = document.getElementById('createBtn');
+    const loginBtn = document.getElementById('loginBtn');
+    const avatarBtn = document.getElementById('avatarBtn');
+
+    // account panel elements
+    const accountPanel = document.getElementById('accountPanel');
+    const accountClose = document.getElementById('accountClose');
+    const apName = document.getElementById('ap-name');
+    const apEmail = document.getElementById('ap-email');
+    const apRole = document.getElementById('ap-role');
+    const accDashboard = document.getElementById('accDashboard');
+    const accEditPwd = document.getElementById('accEditPwd');
+    const accLogout = document.getElementById('accLogout');
+    const changePwdArea = document.getElementById('changePwdArea');
+    const changePwdBtn = document.getElementById('changePwdBtn');
+    const newPwd = document.getElementById('newPwd');
+    const confirmPwd = document.getElementById('confirmPwd');
+    const pwdMsg = document.getElementById('pwdMsg');
+
+    let isLoggedIn = false;
+
+    // overlay modal elements
+    const overlay = document.getElementById('overlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDesc = document.getElementById('modalDesc');
+    const modalClose = document.getElementById('modalClose');
+    const modalUse = document.getElementById('modalUse');
+    const modalLearn = document.getElementById('modalLearn');
+
+    // toggle account panel helpers
+    function openPanel(){ accountPanel.classList.add('show'); accountPanel.setAttribute('aria-hidden','false'); avatarBtn.setAttribute('aria-expanded','true'); }
+    function closePanel(){ accountPanel.classList.remove('show'); accountPanel.setAttribute('aria-hidden','true'); avatarBtn.setAttribute('aria-expanded','false'); }
+
+    avatarBtn.addEventListener('click', ()=> {
+      if(isLoggedIn) {
+        if(accountPanel.classList.contains('show')) closePanel(); else openPanel();
+      } else {
+        window.location.href = 'login.html';
+      }
+    });
+    avatarBtn.addEventListener('keydown', (e)=> { if(e.key==='Enter' || e.key===' ') { e.preventDefault(); avatarBtn.click(); } });
+
+    notifBtn.addEventListener('click', ()=> {
+      if(isLoggedIn) alert('No notifications — demo');
+      else window.location.href = 'login.html';
+    });
+
+    accountClose.addEventListener('click', closePanel);
+    document.addEventListener('click', (e)=> {
+      if (!accountPanel.contains(e.target) && e.target !== avatarBtn && !avatarBtn.contains(e.target)) closePanel();
+    });
+    document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') { closePanel(); closeModal(); } });
+
+    // toggle change pwd area
+    accEditPwd.addEventListener('click', ()=> {
+      changePwdArea.style.display = changePwdArea.style.display === 'none' ? 'block' : 'none';
+    });
+
+    changePwdBtn.addEventListener('click', async ()=> {
+      const np = newPwd.value.trim(), cp = confirmPwd.value.trim();
+      pwdMsg.textContent = '';
+      if(np.length < 6){ pwdMsg.textContent = 'Password must be at least 6 characters'; pwdMsg.style.color='crimson'; return; }
+      if(np !== cp){ pwdMsg.textContent = 'Passwords do not match'; pwdMsg.style.color='crimson'; return; }
+      try {
+        const res = await fetch(API_BASE + '/change-password', { method:'POST', credentials:'include', headers:{'content-type':'application/json'}, body: JSON.stringify({ new_password: np }) });
+        if(res.ok){ pwdMsg.textContent='Password changed successfully'; pwdMsg.style.color='green'; newPwd.value=confirmPwd.value=''; setTimeout(()=> changePwdArea.style.display='none',900); }
+        else { const txt = await res.text().catch(()=>res.statusText); pwdMsg.textContent = 'Change failed: ' + txt; pwdMsg.style.color='crimson'; }
+      } catch(e){ pwdMsg.textContent='Cannot reach server — demo mode'; pwdMsg.style.color='green'; newPwd.value=confirmPwd.value=''; setTimeout(()=> changePwdArea.style.display='none',900); }
+    });
+
+    // logout
+    accLogout.addEventListener('click', async ()=> {
+      try {
+        const res = await fetch(API_BASE + '/logout', { method:'POST', credentials:'include' });
+        if(res.ok){
+          isLoggedIn = false;
+          avatarBtn.style.display = 'none';
+          loginBtn.style.display = '';
+          closePanel();
+          // show home
+          document.getElementById('home').style.display = '';
+          document.querySelector('.cta-wrap').style.display = '';
+          document.querySelector('.news-section').style.display = '';
+          document.getElementById('dashboard').style.display = 'none';
+          alert('Logged out');
+        } else alert('Logout failed');
+      } catch(e){
+        isLoggedIn = false;
+        avatarBtn.style.display = 'none';
+        loginBtn.style.display = '';
+        closePanel();
+        document.getElementById('home').style.display = '';
+        document.querySelector('.cta-wrap').style.display = '';
+        document.querySelector('.news-section').style.display = '';
+        document.getElementById('dashboard').style.display = 'none';
+        alert('Demo: logged out');
+      }
+    });
+
+    accDashboard.addEventListener('click', ()=> {
+      document.getElementById('home').style.display = 'none';
+      document.querySelector('.cta-wrap').style.display = 'none';
+      document.querySelector('.news-section').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      closePanel();
+      dashboard.scrollIntoView({behavior:'smooth'});
+    });
+
+    // fetch /me once on load and toggle UI
+    async function initAccountArea() {
+      try {
+        const res = await fetch(API_BASE + '/me', { credentials:'include' });
+        if(res.ok){
+          const data = await res.json();
+          isLoggedIn = true;
+          apName.textContent = data.name || data.email || 'User';
+          apEmail.textContent = data.email || '';
+          apRole.textContent = 'Role: ' + (data.role || 'User');
+          avatarBtn.style.display = 'grid';
+          avatarBtn.textContent = (data.name && data.name[0]) ? data.name[0].toUpperCase() : (data.email ? data.email[0].toUpperCase() : 'U');
+          avatarBtn.title = data.name || data.email || 'Account';
+          // hide login link
+          loginBtn.style.display = 'none';
+          // optionally show dashboard inline
+          document.getElementById('home').style.display = 'none';
+          document.querySelector('.cta-wrap').style.display = 'none';
+          document.querySelector('.news-section').style.display = 'none';
+          document.getElementById('dashboard').style.display = 'block';
+        } else {
+          // not logged in
+          isLoggedIn = false;
+          avatarBtn.style.display = 'none';
+          loginBtn.style.display = '';
+          document.getElementById('dashboard').style.display = 'none';
+        }
+      } catch(e){
+        console.warn('Cannot reach /me:', e);
+        isLoggedIn = false;
+        avatarBtn.style.display = 'none';
+        loginBtn.style.display = '';
+        document.getElementById('dashboard').style.display = 'none';
+      }
+    }
+
+    /* ---------- FEATURES: modal behavior ---------- */
+    const featureGrid = document.getElementById('featureGrid');
+    featureGrid.addEventListener('click', (e)=>{
+      const card = e.target.closest('.card');
+      if(!card) return;
+      // open modal with feature info
+      const title = card.dataset.feature || card.querySelector('h3')?.textContent || 'Feature';
+      const desc = card.dataset.desc || card.querySelector('p')?.textContent || '';
+      const href = card.dataset.href || null;
+      openModal(title, desc, href);
+    });
+
+    function openModal(title, desc, href){
+      modalTitle.textContent = title;
+      modalDesc.textContent = desc;
+      modalUse.dataset.href = href || '';
+      modalLearn.dataset.href = href || '';
+      overlay.classList.add('show');
+      overlay.setAttribute('aria-hidden','false');
+
+      // set actions
+      modalUse.onclick = ()=> {
+        // if logged in, navigate to href or dashboard; otherwise go to login page
+        if(isLoggedIn){
+          if(modalUse.dataset.href && modalUse.dataset.href !== '#'){
+            window.location.href = modalUse.dataset.href;
+          } else {
+            document.getElementById('home').style.display = 'none';
+            document.querySelector('.cta-wrap').style.display = 'none';
+            document.querySelector('.news-section').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            closeModal();
+          }
+        } else {
+          // not logged in: take them to login page
+          window.location.href = 'login.html';
+        }
+      };
+
+      modalLearn.onclick = ()=> {
+        // open docs or a help page (for now, go to posts)
+        window.location.href = '#posts';
+      };
+    }
+
+    function closeModal(){
+      overlay.classList.remove('show');
+      overlay.setAttribute('aria-hidden','true');
+    }
+    modalClose.addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e)=> { if(e.target === overlay) closeModal(); });
+
+
+    /* ---------- EMI related (existing) ---------- */
+    const dashboard = document.getElementById('dashboard');
+    const dashCalculate = document.getElementById('dashCalculate');
+    const dashEmi = document.getElementById('dashEmi');
+    const dashScheduleBody = document.getElementById('dashScheduleBody');
+
+    function calcMonthlyEMI(P, annualRate, years) {
+      const r = annualRate/100/12;
+      const n = years*12;
+      if (!r) return P / n;
+      const emi = (P * r * Math.pow(1+r, n)) / (Math.pow(1+r, n) - 1);
+      return emi;
+    }
+
+    dashCalculate?.addEventListener('click', ()=>{
+      const P = Number(document.getElementById('dashLoanAmount').value) || 0;
+      const rate = Number(document.getElementById('dashInterest').value) || 0;
+      const years = Number(document.getElementById('dashTenure').value) || 0;
+      if(P <= 0 || years <= 0) {
+        dashEmi.textContent = 'Enter valid inputs';
+        return;
+      }
+      const emi = calcMonthlyEMI(P, rate, years);
+      dashEmi.textContent = '₹' + emi.toFixed(2);
+
+      // simple yearly schedule (keeps previous behavior)
+      dashScheduleBody.innerHTML = '';
+      const yearlyPrincipal = P / years;
+      for(let i=1;i<=years;i++){
+        const interest = Math.max(0, (P - yearlyPrincipal*(i-1)) * (rate/100));
+        const total = yearlyPrincipal + interest;
+        const balance = Math.max(0, P - yearlyPrincipal*i);
+        const row = `<tr>
+          <td style="padding:8px">${new Date().getFullYear() + (i-1)}</td>
+          <td style="padding:8px;text-align:right">₹${yearlyPrincipal.toFixed(2)}</td>
+          <td style="padding:8px;text-align:right">₹${interest.toFixed(2)}</td>
+          <td style="padding:8px;text-align:right">₹${total.toFixed(2)}</td>
+          <td style="padding:8px;text-align:right">₹${balance.toFixed(2)}</td>
+        </tr>`;
+        dashScheduleBody.insertAdjacentHTML('beforeend', row);
+      }
+    });
+
+    // init on load
+    window.addEventListener('load', ()=> { initAccountArea(); /* startNewsAutoRefresh(); */ });
+  </script>
+
+</body>
+</html>

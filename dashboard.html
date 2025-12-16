@@ -1,0 +1,1307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Smart EMI — Charts Expanded (Dashboard Compact)</title>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0e17; --card:#0f1724; --muted:#98a0b3; --accent:#5b8bf7; --border: rgba(255,255,255,0.04);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#d6e0f0;
+      background:linear-gradient(180deg,#061022 0%, #071021 100%);
+    }
+
+    /* topbar */
+    .topbar{height:64px;background:linear-gradient(90deg,#1f375f,#2a2b6b);display:flex;align-items:center;padding:0 18px;color:white;gap:16px;position:sticky;top:0;z-index:10}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+    .brand .logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#6be3ff,#5b8bf7);display:flex;align-items:center;justify-content:center;color:#042235;font-weight:800}
+    .search{flex:1;display:flex;justify-content:center}
+    .search input{width:60%;max-width:720px;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.03);color:#e9f0ff}
+
+    /* layout: sidebar + main */
+    .app{display:flex;height:calc(100vh - 64px);min-height:640px}
+    .sidebar{width:260px;background:linear-gradient(180deg,#0e1724,#091220);padding:18px;border-right:1px solid var(--border);color:#c9d6ee;transition:width .2s;overflow:auto}
+    .sidebar.collapsed{width:64px}
+    .nav-item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:8px;cursor:pointer}
+    .nav-item:hover{background:rgba(255,255,255,0.02)}
+    .collapse{margin-top:16px;display:flex;align-items:center;gap:8px;cursor:pointer}
+    .collapse .chev{display:inline-block;border-radius:6px;padding:6px;background:rgba(255,255,255,0.02);width:28px;height:28px;text-align:center}
+    .collapse .text{font-size:13px;color:var(--muted)}
+
+    /* icon inside sidebar nav */
+    .sidebar .icon { width:22px; height:22px; object-fit:contain; margin-right:10px; vertical-align:middle; display:inline-block; }
+    .sidebar .nav-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; }
+
+    /* MAIN area: left compact column + right expanded charts */
+    .main{flex:1;overflow:auto;padding:20px 28px}
+    .columns{display:flex;gap:18px;align-items:flex-start}
+    /* left compact column (fixed width) */
+    .left-compact{width:560px;min-width:320px}
+    /* right expanded charts (fills remaining) */
+    .right-expanded{flex:1;min-width:380px}
+
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:12px;padding:18px;border:1px solid var(--border);box-shadow:0 6px 20px rgba(0,0,0,0.6)}
+    .card.small{padding:12px}
+    .welcome-head{font-size:20px;margin:0 0 8px 0;font-weight:700}
+    .welcome-sub{color:var(--muted);font-size:13px;margin-bottom:10px}
+
+    .tabs{display:flex;gap:10px;margin-bottom:12px}
+    .tab{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);font-size:13px}
+    .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:13px;color:var(--muted)}
+    input[type="number"], input[type="text"]{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:#e8f1ff}
+
+    .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .btn{padding:10px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:600}
+    .btn.primary{background:linear-gradient(90deg,#5b8bf7,#6bc7ff);color:#04122a}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e6f0ff}
+
+    /* Charts area: make it large and flexible */
+    .charts-wrapper{display:flex;flex-direction:column;gap:14px}
+    .chart-card{padding:18px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.015),transparent);border:1px solid rgba(255,255,255,0.02);box-shadow:0 6px 20px rgba(0,0,0,0.5)}
+    .chart-top{display:flex;gap:18px;align-items:flex-start}
+    .chart-large{flex:1;min-height:300px;padding:12px;border-radius:8px;background:rgba(255,255,255,0.01)}
+    .chart-side{width:320px;min-width:260px;padding:12px;border-radius:8px;background:rgba(255,255,255,0.01)}
+    .chart-large canvas, .chart-side canvas{width:100%;height:360px;display:block;background:transparent}
+
+    /* legend / small metrics inside chart card */
+    .metric-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .metric-big{font-size:18px;font-weight:700}
+    .metric-sub{color:var(--muted);font-size:13px}
+
+    /* schedule summary below cards */
+    .schedule{margin-top:18px}
+    table{width:100%;border-collapse:collapse;background:transparent}
+    th,td{padding:10px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.03);font-size:14px;color:#e5eefc}
+    thead th{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);color:#d7e8ff;border-bottom:1px solid rgba(255,255,255,0.05)}
+    tbody tr:hover{background:rgba(255,255,255,0.01)}
+
+    /* ACCOUNT PANEL styles (slide-in) */
+    .overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.35); opacity:0; pointer-events:none; transition:opacity .22s; z-index:9998; }
+    .overlay.active{ opacity:1; pointer-events:all; }
+    .account-panel{ position:fixed; top:0; right:-420px; height:100vh; width:360px; max-width:96%; background:#ffffff; color:#061022; box-shadow:0 10px 40px rgba(2,6,23,0.6); border-radius:0 0 0 14px; transition:right .28s cubic-bezier(.2,.9,.2,1); z-index:9999; overflow:auto; -webkit-overflow-scrolling:touch; }
+    .account-panel.open{ right:0; }
+    .account-panel .panel-inner{ padding:18px; }
+    .account-panel .panel-header{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+    .account-panel .panel-avatar{ width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,#6be3ff,#5b8bf7); display:flex; align-items:center; justify-content:center; font-weight:800; color:#042235; font-size:18px; flex:0 0 54px; }
+    .account-panel .meta-name{ font-weight:700; font-size:15px; color:#051026; margin-bottom:4px; }
+    .account-panel .meta-email{ font-size:13px; color:var(--muted); margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .account-panel .meta-role{ display:inline-block; font-size:12px; color:#1f2937; background:#eef2ff; padding:6px 8px; border-radius:999px; }
+    .account-list{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+    .account-item{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; cursor:pointer; transition:background .12s; user-select:none; font-size:14px; color:#061022; text-decoration:none; background:#f8fafc; border:1px solid #eef2ff; }
+    .account-item:hover{ background:#eef6ff; }
+    .account-item .icon{ width:18px; height:18px; display:inline-block; flex:0 0 18px; }
+
+    .panel-footer{ font-size:12px; color:var(--muted); padding:8px 2px; text-align:center; margin-top:12px; }
+
+    @media (max-width:1200px){
+      .left-compact{width:460px;min-width:380px}
+      .chart-large canvas, .chart-side canvas{height:260px}
+    }
+    @media (max-width:900px){
+      .columns{flex-direction:column}
+      .left-compact{width:100%}
+      .chart-large canvas, .chart-side canvas{height:220px}
+    }
+
+    /* ===== EMI info tooltip + modal (added styles) ===== */
+    .emi-info { display:inline-flex; align-items:center; gap:8px; }
+    .info-icon {
+      width:20px;height:20px;border-radius:6px;display:inline-grid;place-items:center;
+      background:linear-gradient(90deg,#f0f7ff,#dbefff);color:#042235;font-weight:700;
+      font-size:12px;cursor:pointer;border:1px solid rgba(4,18,34,0.06);
+    }
+    .info-icon:focus { outline:2px solid rgba(91,139,247,0.35); }
+
+    .emi-tooltip {
+      position:absolute; z-index:99999; min-width:220px; max-width:320px;
+      background:#071224; color:#e6f2ff; padding:8px 10px; border-radius:8px;
+      box-shadow:0 8px 30px rgba(2,6,23,0.6); font-size:13px; display:none;
+      border:1px solid rgba(255,255,255,0.04);
+      top:28px; left:0;
+    }
+    .emi-tooltip.visible { display:block; }
+
+    .emi-modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.48); display:none; z-index:15000;
+      align-items:center; justify-content:center; padding:18px;
+    }
+    .emi-modal-overlay.open { display:flex; }
+    .emi-modal {
+      width:min(720px,100%); background:#f8fbff; color:#061022; border-radius:12px; padding:16px;
+      box-shadow:0 12px 40px rgba(2,6,23,0.6);
+    }
+    .emi-modal h3 { margin:0 0 8px 0; font-size:18px; }
+    .emi-modal p { margin:6px 0; color:#26324a; font-size:14px; }
+    .emi-modal .close { margin-top:12px; display:inline-block; padding:8px 12px; border-radius:8px; border:0; cursor:pointer; background:linear-gradient(90deg,#5b8bf7,#6bc7ff); color:#042235; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><div class="logo">SE</div><div>Smart <span style="color:var(--accent)">EMI</span></div></div>
+    <div class="search"><input placeholder="Search tools, posts, loans..." /></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div style="padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.04);font-size:14px">Calculator</div>
+
+      <!-- CLICKABLE AVATAR: opens account panel -->
+      <button id="avatarBtn" title="Account" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(90deg,#fff,#d7e8ff);display:flex;align-items:center;justify-content:center;color:#042235;border:0;cursor:pointer;font-weight:700">
+        A
+      </button>
+    </div>
+  </div>
+
+  <div class="app">
+    <!-- ---------- SIDEBAR (fixed) ---------- -->
+    <aside class="sidebar" id="sidebar">
+      <h3>Categories</h3>
+
+      <div class="nav-item">
+        <img src="images/family.gif" class="icon" alt="family icon"> <span>Personal &amp; Lifestyle</span>
+      </div>
+
+      <div class="nav-item">
+        <img src="images/car.gif" class="icon" alt="car icon"> <span>Vehicle &amp; Transport</span>
+      </div>
+
+      <div class="nav-item">
+        <img src="images/home.gif" class="icon" alt="home icon"> <span>Property &amp; Housing</span>
+      </div>
+
+      <div class="nav-item">
+        <img src="images/business.gif" class="icon" alt="business icon"> <span>Business</span>
+      </div>
+
+      <div class="nav-item">
+        <img src="images/sec.gif" class="icon" alt="secured/unsecured icon"> <span>Secured / Unsecured</span>
+      </div>
+
+      <div class="nav-item">
+        <img src="images/news.gif" class="icon" alt="news icon"> <span>News &amp; Updates</span>
+      </div>
+
+      <div class="collapse" id="collapseBtn" title="Collapse / Expand sidebar" style="margin-top:14px">
+        <div class="chev">«</div>
+        <div class="text">Collapse</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="columns">
+        <!-- LEFT: compact welcome/dashboard card (fixed width) -->
+        <div class="left-compact">
+          <div class="card">
+            <h2 class="welcome-head">Welcome to your Dashboard</h2>
+            <div class="welcome-sub">Access calculators, saved PDFs, and browse loan categories.</div>
+
+            <div class="tabs">
+              <div class="tab">Personal Loan</div>
+              <div class="tab">Consumer Durable</div>
+              <div class="tab">Education</div>
+              <div class="tab">Medical</div>
+            </div>
+
+            <div class="calc-grid">
+              <div class="field"><label>Loan Amount</label><input id="loanAmount" type="number" value="1000000" /></div>
+              <div class="field"><label>Interest Rate % p.a.</label><input id="rate" type="number" step="0.01" value="10.75" /></div>
+
+              <div class="field"><label>Tenure (Years)</label><input id="tenureYears" type="number" value="1" /></div>
+              <div class="field"><label>Fees & Charges</label><input id="fees" type="number" value="0" /></div>
+
+              <!-- EMI Scheme block with info icon + modal (radio inputs MUST have values) -->
+              <div style="grid-column:1/3" class="field" id="emiSchemeField">
+                <label style="display:flex;align-items:center;gap:8px">
+                  EMI Scheme
+                  <span class="emi-info" style="position:relative;">
+                    <button id="emiInfoBtn" class="info-icon" aria-haspopup="dialog" aria-controls="emiInfoTooltip" aria-expanded="false" title="What is EMI in Advance / Arrears?">i</button>
+                    <div id="emiInfoTooltip" role="tooltip" class="emi-tooltip" aria-hidden="true">
+                      <strong>Advance (pre-EMI)</strong><br/>Pay the EMI at the start of each period — reduces effective interest. <br/><br/>
+                      <strong>Arrears (standard)</strong><br/>Pay at the end of the period — you get full disbursal now.
+                      <div style="margin-top:8px;font-size:12px;color:#98a0b3">Click for a short example & details</div>
+                    </div>
+                  </span>
+                </label>
+
+                <div style="display:flex;gap:12px;margin-top:6px" aria-labelledby="emiSchemeField">
+                  <label style="color:var(--muted)"><input type="radio" name="scheme" value="advance" checked/> EMI in Advance</label>
+                  <label style="color:var(--muted)"><input type="radio" name="scheme" value="arrears" /> EMI in Arrears</label>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="actions">
+              <button class="btn primary" id="calculateBtn">Calculate</button>
+              <button class="btn ghost" id="downloadPdfBtn">Download PDF</button>
+              <button class="btn ghost" id="downloadExcelBtn">Download Excel</button>
+              <button class="btn ghost" id="emailBtn">Email</button>
+              <button class="btn ghost" id="shareBtn">Share</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: expanded charts area (fills remaining width) -->
+        <div class="right-expanded">
+          <div class="charts-wrapper">
+            <div class="chart-card">
+              <div class="metric-row" style="margin-bottom:12px">
+                <div>
+                  <div class="metric-big">Loan EMI<br/><span style="font-size:16px">₹ <span id="emiValue">—</span></span></div>
+                  <div class="metric-sub">Total Interest<br/>₹ <span id="totalInterest">—</span></div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:13px;color:var(--muted)">Loan APR</div>
+                  <div style="font-weight:700;font-size:16px">— %</div>
+                  <div class="metric-sub">Total Payment<br/>₹ <span id="totalPayment">—</span></div>
+                </div>
+              </div>
+
+              <div class="chart-top">
+                <div class="chart-large">
+                  <canvas id="barChart"></canvas>
+                </div>
+                <div class="chart-side">
+                  <canvas id="pieChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- you can add another large chart card below if needed -->
+          </div>
+        </div>
+      </div>
+
+      <!-- schedule summary below both columns -->
+      <div class="card schedule" style="margin-top:18px">
+        <h3 style="margin:6px 0">Schedule</h3>
+        <div style="color:var(--muted)">Showing EMI payments by year; use downloads for the full monthly schedule.</div>
+        <div style="overflow:auto;margin-top:10px">
+          <table id="scheduleTable">
+            <thead>
+              <tr><th>Year</th><th>Principal (A)</th><th>Interest (B)</th><th>Total Payment (A+B)</th><th>Balance</th><th>Loan Paid To Date</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ACCOUNT PANEL + OVERLAY (added, minimal changes above) -->
+  <div id="accountOverlay" class="overlay" aria-hidden="true"></div>
+
+  <aside id="accountPanel" class="account-panel" role="dialog" aria-label="Account">
+    <div class="panel-inner">
+      <button id="accountCloseBtn" style="position:absolute;right:12px;top:10px;background:transparent;border:0;font-size:18px;cursor:pointer">✕</button>
+
+      <div class="panel-header" style="margin-top:6px">
+        <div class="panel-avatar" id="panelAvatar">A</div>
+        <div class="panel-meta">
+          <div class="meta-name" id="userName">Harish R</div>
+          <div class="meta-email" id="userEmail">hr636298@gmail.com</div>
+          <div class="meta-role" id="userRole">Role: User</div>
+        </div>
+      </div>
+
+      <div class="divider" style="height:1px;background:rgba(2,6,23,0.06);margin:12px 0;border-radius:2px"></div>
+
+      <nav class="account-list" aria-label="Account actions">
+        <a class="account-item" id="actionDashboard" href="dashboard.html" role="menuitem">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 13h8V3H3v10zM13 21h8V11h-8v10zM13 3v6h8V3h-8zM3 21h8v-8H3v8z" stroke="#0b1220" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>Dashboard</div>
+        </a>
+
+        <a class="account-item" id="actionEdit" href="edit-password.html" role="menuitem">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 11c1.657 0 3 1.343 3 3v3H9v-3c0-1.657 1.343-3 3-3zM7 10V8a5 5 0 1110 0v2" stroke="#0b1220" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>Edit password</div>
+        </a>
+
+        <a class="account-item" id="actionLogout" href="#" role="menuitem">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 17l5-5-5-5M21 12H9M13 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h7" stroke="#0b1220" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>Logout</div>
+        </a>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- EMI Modal (add once near body end) -->
+  <div id="emiModalOverlay" class="emi-modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="emi-modal" role="document">
+      <h3>EMI in Advance vs EMI in Arrears — Quick Example</h3>
+      <p><strong>Advance:</strong> First EMI paid immediately. Example: Loan ₹1,00,000 — if EMI ₹2,500 is taken as advance, usable amount ≈ ₹97,500 and total interest is slightly lower.</p>
+      <p><strong>Arrears:</strong> First EMI after one period. Example: You receive full ₹1,00,000 and pay first EMI after 30 days; total interest is marginally higher.</p>
+      <button id="emiModalClose" class="close">Got it</button>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Helpers ----------
+    function round2(x){ return Math.round((Number(x) + Number.EPSILON) * 100) / 100; }
+    function fmt(x){ return Number(x).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+    function toINR(x){ return '₹' + fmt(x); }
+
+    // Function to fetch user profile and update display
+    async function loadUserProfile() {
+      try {
+        console.log('Loading user profile from localStorage...');
+        
+        // Try to get user from localStorage first
+        const currentUserStr = localStorage.getItem('currentUser');
+        if (currentUserStr) {
+          const user = JSON.parse(currentUserStr);
+          console.log('User data from localStorage:', user);
+          
+          if (user) {
+            // Update user information in the account panel
+            const userNameEl = document.getElementById('userName');
+            const userEmailEl = document.getElementById('userEmail');
+            const panelAvatarEl = document.getElementById('panelAvatar');
+            const avatarBtnEl = document.getElementById('avatarBtn');
+            
+            if (userNameEl) userNameEl.textContent = user.name;
+            if (userEmailEl) userEmailEl.textContent = user.email;
+            
+            // Update avatar with first letter of user's name
+            const firstLetter = user.name.charAt(0).toUpperCase();
+            if (panelAvatarEl) panelAvatarEl.textContent = firstLetter;
+            if (avatarBtnEl) avatarBtnEl.textContent = firstLetter;
+            
+            console.log('User profile updated successfully from localStorage');
+            // Trigger initial calculation after user profile is loaded
+            renderAll();
+            return;
+          }
+        }
+        
+        // If not in localStorage, try to fetch from server
+        console.log('Fetching user profile from server...');
+        const response = await fetch('/profile', {
+          credentials: 'include' // Include cookies/session data
+        });
+        console.log('Profile response status:', response.status);
+        console.log('Profile response headers:', [...response.headers.entries()]);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Profile fetch failed with status:', response.status, 'Body:', errorText);
+          throw new Error(`Failed to fetch profile: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Profile data received:', data);
+        
+        if (data.user) {
+          // Update user information in the account panel
+          const userNameEl = document.getElementById('userName');
+          const userEmailEl = document.getElementById('userEmail');
+          const panelAvatarEl = document.getElementById('panelAvatar');
+          const avatarBtnEl = document.getElementById('avatarBtn');
+          
+          if (userNameEl) userNameEl.textContent = data.user.name;
+          if (userEmailEl) userEmailEl.textContent = data.user.email;
+          
+          // Update avatar with first letter of user's name
+          const firstLetter = data.user.name.charAt(0).toUpperCase();
+          if (panelAvatarEl) panelAvatarEl.textContent = firstLetter;
+          if (avatarBtnEl) avatarBtnEl.textContent = firstLetter;
+          
+          console.log('User profile updated successfully from server');
+          // Trigger initial calculation after user profile is loaded
+          renderAll();
+        } else {
+          console.warn('No user data in profile response');
+          throw new Error('No user data in profile response');
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+        // Fallback to default if there's an error
+        const userNameEl = document.getElementById('userName');
+        const userEmailEl = document.getElementById('userEmail');
+        const panelAvatarEl = document.getElementById('panelAvatar');
+        const avatarBtnEl = document.getElementById('avatarBtn');
+        
+        if (userNameEl) userNameEl.textContent = 'Guest User';
+        if (userEmailEl) userEmailEl.textContent = 'guest@example.com';
+        if (panelAvatarEl) panelAvatarEl.textContent = 'G';
+        if (avatarBtnEl) avatarBtnEl.textContent = 'G';
+        
+        // Still trigger initial calculation even if user profile loading fails
+        renderAll();
+      }
+    }
+
+    // Call the function to load user profile when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // Small delay to ensure all elements are ready
+      setTimeout(function() {
+        loadUserProfile();
+        // Also trigger initial calculation
+        renderAll();
+      }, 100);
+    });
+
+    // ---------- EMI core: compute per selected mode ----------
+    // This function returns monthly EMI, monthly amortization array and total interest
+    function computeEmiForMode(P, annualRate, nMonths, mode, fees){
+      const feesNum = Number(fees) || 0;
+      const principal = Number(P) || 0;
+      const n = Math.max(0, Math.floor(Number(nMonths) || 0));
+      const r = (Number(annualRate) || 0) / 100 / 12;
+
+      if (principal <= 0 || n <= 0) {
+        return { monthlyEmi: 0, r, amortization: [], totalInterest: 0 };
+      }
+
+      // We follow your previous behavior: fees are treated as added to principal (adjust if needed)
+      const PV = principal + feesNum;
+
+      // Ordinary annuity (arrears)
+      let emiOrd;
+      if (r === 0) emiOrd = PV / n;
+      else {
+        const pow = Math.pow(1 + r, n);
+        emiOrd = PV * r * pow / (pow - 1);
+      }
+
+      // Annuity-due (advance) -> payment = emiOrd / (1 + r)
+      const emi = (mode === 'advance') ? (emiOrd / (1 + r)) : emiOrd;
+
+      // Build monthly amortization schedule
+      const amort = [];
+      let balance = round2(PV);
+      let totalInterest = 0;
+
+      if (mode === 'advance'){
+        // immediate payment at t=0
+        const pay0 = round2(emi);
+        const interest0 = 0;
+        const principalPaid0 = round2(pay0 - interest0);
+        balance = round2(Math.max(0, balance - principalPaid0));
+        amort.push({ month: 0, payment: pay0, interest: interest0, principalPaid: principalPaid0, balance });
+
+        for (let m = 1; m < n; m++){
+          const interest = round2(balance * r);
+          const principalPaid = round2(emi - interest);
+          balance = round2(Math.max(0, balance - principalPaid));
+          totalInterest = round2(totalInterest + interest);
+          amort.push({ month: m, payment: round2(emi), interest, principalPaid, balance });
+        }
+      } else {
+        // arrears: payments at end of each month 1..n
+        for (let m = 1; m <= n; m++){
+          const interest = round2(balance * r);
+          const principalPaid = round2(emi - interest);
+          balance = round2(Math.max(0, balance - principalPaid));
+          totalInterest = round2(totalInterest + interest);
+          amort.push({ month: m, payment: round2(emi), interest, principalPaid, balance });
+        }
+      }
+
+      return { monthlyEmi: round2(emi), r, amortization: amort, totalInterest: round2(totalInterest) };
+    }
+
+    // ---------- Charts ----------
+    let barChart=null, pieChart=null;
+    function renderBarChart(labels, principal, interest, balance){
+      const canvas = document.getElementById('barChart');
+      if (!canvas) {
+        console.warn('Bar chart canvas not found');
+        return;
+      }
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.warn('Unable to get 2D context for bar chart');
+        return;
+      }
+      
+      if(barChart) barChart.destroy();
+      barChart = new Chart(ctx, {
+        type:'bar',
+        data:{ labels, datasets:[
+          {label:'Principal',data:principal, backgroundColor:'rgba(78, 224, 140, 0.95)'},
+          {label:'Interest',data:interest, backgroundColor:'rgba(244,162,97,0.95)'},
+          {label:'Balance',data:balance, type:'line', borderColor:'rgba(200,120,255,0.95)', fill:false, tension:0.25}
+        ]},
+        options:{ maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{ y: { beginAtZero:true, ticks:{ callback:v => '₹'+Math.round(v/1000)+'k' } } } }
+      });
+    }
+    function renderPieChart(pr, it, fees){
+      const canvas = document.getElementById('pieChart');
+      if (!canvas) {
+        console.warn('Pie chart canvas not found');
+        return;
+      }
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.warn('Unable to get 2D context for pie chart');
+        return;
+      }
+      
+      if(pieChart) pieChart.destroy();
+      pieChart = new Chart(ctx, {
+        type:'pie',
+        data:{ labels:['Principal','Interest','Fees'], datasets:[{data:[pr,it,fees]}] },
+        options:{ maintainAspectRatio:false, plugins:{legend:{position:'bottom'}} }
+      });
+    }
+
+    // ---------- Render UI (reads scheme and uses computeEmiForMode) ----------
+    function renderAll(){
+      try {
+        const P = Number(document.getElementById('loanAmount').value) || 1000000;
+        const r = Number(document.getElementById('rate').value) || 10.75;
+        const years = Number(document.getElementById('tenureYears').value) || 1;
+        const fees = Number(document.getElementById('fees').value) || 0;
+        const n = Math.max(1, Math.floor(years * 12));
+
+        const schemeEl = document.querySelector('input[name="scheme"]:checked');
+        const scheme = schemeEl ? schemeEl.value : 'advance';
+
+        // compute
+        const calc = computeEmiForMode(P, r, n, scheme, fees);
+        const monthlyEmi = calc.monthlyEmi;
+        const totalInterest = calc.totalInterest;
+        const totalPayment = round2(monthlyEmi * n);
+
+        // update top metrics
+        const emiValueEl = document.getElementById('emiValue');
+        const totalInterestEl = document.getElementById('totalInterest');
+        const totalPaymentEl = document.getElementById('totalPayment');
+        
+        if (emiValueEl) emiValueEl.innerText = fmt(monthlyEmi);
+        if (totalInterestEl) totalInterestEl.innerText = fmt(totalInterest);
+        if (totalPaymentEl) totalPaymentEl.innerText = fmt(totalPayment);
+
+        // Build yearly schedule by summing monthly rows
+        const yearly = [];
+        let yearIndex = 0;
+        let yearPrincipalSum = 0;
+        let yearInterestSum = 0;
+        let yearPaymentSum = 0;
+        let yearEndBalance = 0;
+        const amort = calc.amortization;
+
+        for (let i = 0; i < amort.length; i++) {
+          const row = amort[i];
+          yearPrincipalSum += row.principalPaid;
+          yearInterestSum += row.interest;
+          yearPaymentSum += row.payment;
+          yearEndBalance = row.balance;
+
+          const isBoundary = ((i + 1) % 12 === 0) || (i === amort.length - 1);
+          if (isBoundary) {
+            yearIndex++;
+            yearly.push({
+              year: (new Date().getFullYear() - 1) + yearIndex,
+              principalYear: round2(yearPrincipalSum),
+              interestYear: round2(yearInterestSum),
+              totalPayment: round2(yearPaymentSum),
+              balance: round2(yearEndBalance),
+              paidPct: round2(((P - Math.max(0, yearEndBalance - fees)) / P) * 100)
+            });
+            yearPrincipalSum = 0; yearInterestSum = 0; yearPaymentSum = 0;
+          }
+        }
+
+        // populate schedule table (yearly)
+        const tbody = document.querySelector('#scheduleTable tbody');
+        if (tbody) {
+          tbody.innerHTML='';
+          yearly.forEach(row=>{
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${row.year}</td><td>${toINR(row.principalYear)}</td><td>${toINR(row.interestYear)}</td><td>${toINR(row.totalPayment)}</td><td>${toINR(row.balance)}</td><td>${row.paidPct.toFixed(2)}%</td>`;
+            tbody.appendChild(tr);
+          });
+        }
+
+        // Charts (use yearly aggregates)
+        const yearsArr = yearly.map(s=>s.year);
+        const principals = yearly.map(s=>s.principalYear);
+        const interests = yearly.map(s=>s.interestYear);
+        const balances = yearly.map(s=>s.balance);
+
+        renderBarChart(yearsArr, principals, interests, balances);
+        renderPieChart(principals.reduce((a,b)=>a+b,0), interests.reduce((a,b)=>a+b,0), fees);
+
+        // Get user name for export functions
+        const userNameEl = document.getElementById('userName');
+        const userName = userNameEl ? userNameEl.textContent : 'User';
+        
+        window._lastResult = { P, r, years, fees, scheme, calc, yearly, monthlyEmi, totalInterest, totalPayment, userName };
+      } catch (error) {
+        console.error('Error in renderAll:', error);
+      }
+    }
+
+    // ---------- Exports ----------
+    function exportCSV(){
+      const last = window._lastResult || null;
+      if(!last){ alert('Calculate first'); return; }
+      
+      // Create clean numeric values without currency symbols
+      const cleanRows = [];
+      
+      // Add header information
+      cleanRows.push(['Personal Loan']);
+      cleanRows.push([]);
+      cleanRows.push(['Borrower Details']);
+      cleanRows.push(['Name', last.userName || 'User']);
+      cleanRows.push(['Loan Type', 'Personal Loan']);
+      cleanRows.push(['EMI Scheme', last.scheme]);
+      cleanRows.push([]);
+      
+      // Loan Overview
+      cleanRows.push(['Loan Overview']);
+      cleanRows.push(['Description', 'Value']);
+      cleanRows.push(['Principal Amount', last.P.toFixed(2)]);
+      cleanRows.push(['Interest Rate (p.a.)', last.r + '%']);
+      cleanRows.push(['Tenure', last.years + ' Year' + (last.years > 1 ? 's' : '')]);
+      cleanRows.push([]);
+      
+      // EMI Details
+      cleanRows.push(['EMI Details']);
+      cleanRows.push(['Description', 'Value']);
+      cleanRows.push(['Monthly EMI', last.monthlyEmi.toFixed(2)]);
+      cleanRows.push(['Total Interest', last.totalInterest.toFixed(2)]);
+      cleanRows.push(['Total Payment', (last.monthlyEmi * Math.max(1, Math.floor(last.years * 12))).toFixed(2)]);
+      cleanRows.push([]);
+      
+      // Interest Summary
+      cleanRows.push(['Interest Summary']);
+      cleanRows.push(['Component', 'Amount', 'Percentage']);
+      const principalPercentage = ((last.P / (last.P + last.totalInterest)) * 100);
+      const interestPercentage = ((last.totalInterest / (last.P + last.totalInterest)) * 100);
+      cleanRows.push(['Principal', last.P.toFixed(2), principalPercentage.toFixed(2) + '%']);
+      cleanRows.push(['Interest', last.totalInterest.toFixed(2), interestPercentage.toFixed(2) + '%']);
+      cleanRows.push([]);
+      
+      // Year-wise Amortization Table
+      cleanRows.push(['Year-wise Amortization Table']);
+      cleanRows.push(['Year', 'Principal (A)', 'Interest (B)', 'Total Payment (A+B)', 'Balance', 'Loan Paid To Date']);
+      last.yearly.forEach(s => cleanRows.push([s.year, s.principalYear.toFixed(2), s.interestYear.toFixed(2), s.totalPayment.toFixed(2), s.balance.toFixed(2), s.paidPct.toFixed(2) + '%']));
+      cleanRows.push([]);
+      
+      // Footer note
+      cleanRows.push(['Note: This is a computer-generated EMI schedule for reference purposes.']);
+      
+      const csv = cleanRows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'emi_schedule.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // exportPDF: create PDF with summary + yearly schedule (charts optional)
+    function exportPDF(){
+      const last = window._lastResult || null;
+      if(!last){ alert('Calculate first'); return; }
+
+      function loadScript(src){
+        return new Promise((resolve, reject) => {
+          if(document.querySelector(`script[src="${src}"]`)) return resolve();
+          const s = document.createElement('script'); s.src = src; s.async = true;
+          s.onload = () => setTimeout(resolve, 50);
+          s.onerror = () => reject(new Error('Failed loading ' + src));
+          document.head.appendChild(s);
+        });
+      }
+
+      const jsPDFUrl = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      loadScript(jsPDFUrl).then(() => {
+        try {
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({ unit:'pt', format:'a4', orientation:'portrait' });
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const marginLeft = 40;
+          const marginRight = 40;
+          let y = 30;
+          
+          // Header with gradient background
+          pdf.setDrawColor(52, 131, 235);
+          pdf.setFillColor(52, 131, 235);
+          pdf.rect(0, 0, pageWidth, 80, 'F');
+          
+          // Bank logo/name
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFontSize(28);
+          pdf.setFont(undefined, 'bold');
+          pdf.text('BANK', marginLeft, 45);
+          
+          pdf.setFontSize(12);
+          pdf.setFont(undefined, 'normal');
+          pdf.text('Personal Banking Division', marginLeft, 60);
+          
+          // Document title
+          pdf.setFontSize(22);
+          pdf.text('PERSONAL LOAN EMI STATEMENT', pageWidth/2, 120, null, null, 'center');
+          
+          // Document info
+          pdf.setFontSize(10);
+          pdf.text(`Statement Date: ${new Date().toLocaleDateString()}`, pageWidth - marginRight - 150, 45);
+          pdf.text(`Document ID: EMI-${Date.now().toString().substr(-6)}`, pageWidth - marginRight - 150, 60);
+          
+          y = 150;
+
+          // Borrower Details section with colored box
+          pdf.setFillColor(240, 248, 255);
+          pdf.rect(marginLeft - 10, y - 20, pageWidth - marginLeft - marginRight + 20, 85, 'F');
+          pdf.setDrawColor(173, 216, 230);
+          pdf.rect(marginLeft - 10, y - 20, pageWidth - marginLeft - marginRight + 20, 85);
+          
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFontSize(14);
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Borrower Details', marginLeft, y);
+          y += 20;
+          
+          pdf.setFont(undefined, 'normal');
+          pdf.setFontSize(11);
+          pdf.text(`Name: ${last.userName || 'Varun'}`, marginLeft + 10, y);
+          y += 18;
+          pdf.text('Loan Type: Personal Loan', marginLeft + 10, y);
+          y += 18;
+          pdf.text('EMI Scheme: Advance', marginLeft + 10, y);
+          y += 30;
+
+          // Loan Overview section with styled table
+          pdf.setFontSize(14);
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Loan Overview', marginLeft, y);
+          y += 25;
+          
+          // Styled table for Loan Overview
+          const overviewCol1 = marginLeft;
+          const overviewCol2 = marginLeft + 250;
+          
+          // Table header with blue background
+          pdf.setFillColor(52, 131, 235);
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont(undefined, 'bold');
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 25, 'F');
+          pdf.text('Description', overviewCol1 + 5, y);
+          pdf.text('Value', overviewCol2 + 5, y);
+          y += 25;
+          
+          // Table rows with alternating colors
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFont(undefined, 'normal');
+          
+          // Row 1
+          pdf.setFillColor(245, 245, 245);
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 20, 'F');
+          pdf.text('Principal Amount', overviewCol1 + 5, y);
+          pdf.text(fmt(last.P), overviewCol2 + 5, y);
+          y += 20;
+          
+          // Row 2
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 20, 'F');
+          pdf.text('Interest Rate (p.a.)', overviewCol1 + 5, y);
+          pdf.text(`${last.r}%`, overviewCol2 + 5, y);
+          y += 20;
+          
+          // Row 3
+          pdf.setFillColor(245, 245, 245);
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 20, 'F');
+          pdf.text('Tenure', overviewCol1 + 5, y);
+          pdf.text(`${last.years} Year`, overviewCol2 + 5, y);
+          y += 35;
+
+          // EMI Details section with styled table
+          pdf.setFontSize(14);
+          pdf.setFont(undefined, 'bold');
+          pdf.text('EMI Details', marginLeft, y);
+          y += 25;
+          
+          // Table header with blue background
+          pdf.setFillColor(52, 131, 235);
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont(undefined, 'bold');
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 25, 'F');
+          pdf.text('Description', overviewCol1 + 5, y);
+          pdf.text('Value', overviewCol2 + 5, y);
+          y += 25;
+          
+          // Table rows with alternating colors
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFont(undefined, 'normal');
+          
+          // Row 1
+          pdf.setFillColor(245, 245, 245);
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 20, 'F');
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Monthly EMI', overviewCol1 + 5, y);
+          pdf.setFont(undefined, 'normal');
+          pdf.text(fmt(last.monthlyEmi), overviewCol2 + 5, y);
+          y += 20;
+          
+          // Row 2
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 20, 'F');
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Total Interest', overviewCol1 + 5, y);
+          pdf.setFont(undefined, 'normal');
+          pdf.text(fmt(last.totalInterest), overviewCol2 + 5, y);
+          y += 20;
+          
+          // Row 3
+          pdf.setFillColor(245, 245, 245);
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 20, 'F');
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Total Payment', overviewCol1 + 5, y);
+          pdf.setFont(undefined, 'normal');
+          pdf.text(fmt(round2(last.monthlyEmi * Math.max(1, Math.floor(last.years * 12)))), overviewCol2 + 5, y);
+          y += 35;
+
+          // Interest Summary section with styled table
+          pdf.setFontSize(14);
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Interest Summary', marginLeft, y);
+          y += 25;
+          
+          // Table header
+          const interestCol1 = marginLeft;
+          const interestCol2 = marginLeft + 180;
+          const interestCol3 = marginLeft + 360;
+          
+          pdf.setFillColor(52, 131, 235);
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont(undefined, 'bold');
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 25, 'F');
+          pdf.text('Component', interestCol1 + 5, y);
+          pdf.text('Amount', interestCol2 + 5, y);
+          pdf.text('Percentage', interestCol3 + 5, y);
+          y += 25;
+          
+          // Table rows
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFont(undefined, 'normal');
+          
+          const principalPercentage = ((last.P / (last.P + last.totalInterest)) * 100);
+          const interestPercentage = ((last.totalInterest / (last.P + last.totalInterest)) * 100);
+          
+          // Row 1
+          pdf.setFillColor(245, 245, 245);
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 20, 'F');
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Principal', interestCol1 + 5, y);
+          pdf.setFont(undefined, 'normal');
+          pdf.text(fmt(last.P), interestCol2 + 5, y);
+          pdf.text(`${principalPercentage.toFixed(2)}%`, interestCol3 + 5, y);
+          y += 20;
+          
+          // Row 2
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 20, 'F');
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Interest', interestCol1 + 5, y);
+          pdf.setFont(undefined, 'normal');
+          pdf.text(fmt(last.totalInterest), interestCol2 + 5, y);
+          pdf.text(`${interestPercentage.toFixed(2)}%`, interestCol3 + 5, y);
+          y += 35;
+
+          // Year-wise Amortization Table section with styled table
+          pdf.setFontSize(14);
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Year-wise Amortization Table', marginLeft, y);
+          y += 25;
+          
+          // Table header
+          const colX = [marginLeft, marginLeft+70, marginLeft+170, marginLeft+270, marginLeft+390, marginLeft+470];
+          
+          pdf.setFillColor(52, 131, 235);
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont(undefined, 'bold');
+          pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 25, 'F');
+          pdf.text('Year', colX[0] + 5, y);
+          pdf.text('Principal (A)', colX[1] + 5, y);
+          pdf.text('Interest (B)', colX[2] + 5, y);
+          pdf.text('Total Payment', colX[3] + 5, y);
+          pdf.text('Balance', colX[4] + 5, y);
+          pdf.text('Loan Paid', colX[5] + 5, y);
+          y += 25;
+          
+          // Table rows
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFont(undefined, 'normal');
+          
+          last.yearly.forEach((row, idx) => {
+            if (y > 740) { pdf.addPage(); y = 40; }
+            
+            // Alternate row colors
+            if (idx % 2 === 0) {
+              pdf.setFillColor(245, 245, 245);
+            } else {
+              pdf.setFillColor(255, 255, 255);
+            }
+            pdf.rect(marginLeft, y - 15, pageWidth - marginLeft - marginRight, 20, 'F');
+            
+            pdf.text(String(row.year), colX[0] + 5, y);
+            pdf.text(fmt(row.principalYear), colX[1] + 5, y);
+            pdf.text(fmt(row.interestYear), colX[2] + 5, y);
+            pdf.text(fmt(row.totalPayment), colX[3] + 5, y);
+            pdf.text(fmt(row.balance), colX[4] + 5, y);
+            pdf.text(`${row.paidPct.toFixed(2)}%`, colX[5] + 5, y);
+            y += 20;
+          });
+
+          // Footer note
+          y += 30;
+          if (y > 740) { pdf.addPage(); y = 40; }
+          pdf.setFontSize(9);
+          pdf.setTextColor(100, 100, 100);
+          pdf.setFont(undefined, 'italic');
+          pdf.text('Note: This is a computer-generated EMI schedule for reference purposes.', marginLeft, y);
+          y += 15;
+          pdf.text('System generated document. No signature required.', marginLeft, y);
+
+          pdf.save('personal_loan_emi_statement.pdf');
+        } catch (err) {
+          console.error('exportPDF error', err);
+          alert('PDF export failed — check console.');
+        }
+      }).catch(err=>{
+        console.error('Failed to load jsPDF', err);
+        alert('Could not load PDF library.');
+      });
+    }
+
+    function emailCSV(){
+      const last = window._lastResult || null;
+      if(!last){ alert('Calculate first'); return; }
+      
+      // Create clean numeric values without currency symbols
+      const cleanRows = [];
+      
+      // Add header information
+      cleanRows.push(['Personal Loan']);
+      cleanRows.push([]);
+      cleanRows.push(['Borrower Details']);
+      cleanRows.push(['Name', last.userName || 'User']);
+      cleanRows.push(['Loan Type', 'Personal Loan']);
+      cleanRows.push(['EMI Scheme', last.scheme]);
+      cleanRows.push([]);
+      
+      // Loan Overview
+      cleanRows.push(['Loan Overview']);
+      cleanRows.push(['Description', 'Value']);
+      cleanRows.push(['Principal Amount', last.P.toFixed(2)]);
+      cleanRows.push(['Interest Rate (p.a.)', last.r + '%']);
+      cleanRows.push(['Tenure', last.years + ' Year' + (last.years > 1 ? 's' : '')]);
+      cleanRows.push([]);
+      
+      // EMI Details
+      cleanRows.push(['EMI Details']);
+      cleanRows.push(['Description', 'Value']);
+      cleanRows.push(['Monthly EMI', last.monthlyEmi.toFixed(2)]);
+      cleanRows.push(['Total Interest', last.totalInterest.toFixed(2)]);
+      cleanRows.push(['Total Payment', (last.monthlyEmi * Math.max(1, Math.floor(last.years * 12))).toFixed(2)]);
+      cleanRows.push([]);
+      
+      // Interest Summary
+      cleanRows.push(['Interest Summary']);
+      cleanRows.push(['Component', 'Amount', 'Percentage']);
+      const principalPercentage = ((last.P / (last.P + last.totalInterest)) * 100);
+      const interestPercentage = ((last.totalInterest / (last.P + last.totalInterest)) * 100);
+      cleanRows.push(['Principal', last.P.toFixed(2), principalPercentage.toFixed(2) + '%']);
+      cleanRows.push(['Interest', last.totalInterest.toFixed(2), interestPercentage.toFixed(2) + '%']);
+      cleanRows.push([]);
+      
+      // Year-wise Amortization Table
+      cleanRows.push(['Year-wise Amortization Table']);
+      cleanRows.push(['Year', 'Principal (A)', 'Interest (B)', 'Total Payment (A+B)', 'Balance', 'Loan Paid To Date']);
+      last.yearly.forEach(s => cleanRows.push([s.year, s.principalYear.toFixed(2), s.interestYear.toFixed(2), s.totalPayment.toFixed(2), s.balance.toFixed(2), s.paidPct.toFixed(2) + '%']));
+      cleanRows.push([]);
+      
+      // Footer note
+      cleanRows.push(['Note: This is a computer-generated EMI schedule for reference purposes.']);
+      
+      const csv = cleanRows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+      const subject = encodeURIComponent('Personal Loan EMI Schedule'); const body = encodeURIComponent('Please find your Personal Loan EMI schedule attached:\n\n' + csv);
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    }
+
+    function shareSchedule(){
+      if(navigator.share){
+        const last = window._lastResult || null;
+        if(!last){ alert('Calculate first'); return; }
+        navigator.share({title:'Personal Loan EMI Schedule', text:`Personal Loan EMI: ${toINR(last.monthlyEmi)} | Total Interest: ${toINR(last.totalInterest)} | Tenure: ${last.years} years`}).catch(()=>{});
+      } else alert('Share not supported; use Download Excel');
+    }
+
+    // sidebar collapse
+    (function(){
+      const sidebar = document.getElementById('sidebar');
+      const btn = document.getElementById('collapseBtn');
+      btn && btn.addEventListener('click', ()=>{
+        const collapsed = sidebar.classList.toggle('collapsed');
+        btn.querySelector('.chev').innerText = collapsed ? '»' : '«';
+        btn.querySelector('.text').innerText = collapsed ? 'Expand' : 'Collapse';
+      });
+    })();
+
+    // ACCOUNT PANEL JS (open/close + actions)
+    (function(){
+      const avatarBtn = document.getElementById('avatarBtn');
+      const overlay = document.getElementById('accountOverlay');
+      const panel = document.getElementById('accountPanel');
+      const closeBtn = document.getElementById('accountCloseBtn');
+      const actionLogout = document.getElementById('actionLogout');
+
+      function openPanel(){
+        panel.classList.add('open');
+        overlay.classList.add('active');
+        document.addEventListener('keydown', onKeyDown);
+      }
+      function closePanel(){
+        panel.classList.remove('open');
+        overlay.classList.remove('active');
+        document.removeEventListener('keydown', onKeyDown);
+      }
+      function onKeyDown(e){ if(e.key === 'Escape') closePanel(); }
+
+      avatarBtn.addEventListener('click', openPanel);
+      overlay.addEventListener('click', closePanel);
+      closeBtn.addEventListener('click', closePanel);
+
+      // Logout: clear session/local storage and redirect to login.html (adjust to your app)
+      actionLogout.addEventListener('click', function(e){
+        e.preventDefault();
+        if(!confirm('Are you sure you want to logout?')) return;
+        try { localStorage.removeItem('authToken'); sessionStorage.clear(); } catch(err){}
+        window.location.href = 'login.html';
+      });
+
+      // Load user profile (this will be done by the loadUserProfile function)
+      // We don't need to set user data here as it's handled by loadUserProfile
+      console.log('Account panel initialized');
+      loadUserProfile();
+    })();
+
+    // attach handlers
+    document.getElementById('calculateBtn').addEventListener('click', renderAll);
+    document.getElementById('downloadExcelBtn').addEventListener('click', exportCSV);
+    document.getElementById('downloadPdfBtn').addEventListener('click', exportPDF);
+    document.getElementById('emailBtn').addEventListener('click', emailCSV);
+    document.getElementById('shareBtn').addEventListener('click', shareSchedule);
+
+    // initial calculation will be triggered by the user profile loading
+  </script>
+
+  <!-- ===== EMI tooltip & modal behavior (add near end) ===== -->
+  <script>
+  (function(){
+    const infoBtn = document.getElementById('emiInfoBtn');
+    const tooltip = document.getElementById('emiInfoTooltip');
+    const overlay = document.getElementById('emiModalOverlay');
+    const modalClose = document.getElementById('emiModalClose');
+
+    if(!infoBtn || !tooltip) return;
+
+    // Toggle tooltip (hover + focus)
+    let ttTimer = null;
+    function showTooltip(){
+      tooltip.classList.add('visible');
+      tooltip.setAttribute('aria-hidden','false');
+      infoBtn.setAttribute('aria-expanded','true');
+    }
+    function hideTooltip(){
+      tooltip.classList.remove('visible');
+      tooltip.setAttribute('aria-hidden','true');
+      infoBtn.setAttribute('aria-expanded','false');
+    }
+
+    infoBtn.addEventListener('mouseenter', () => { clearTimeout(ttTimer); showTooltip(); });
+    infoBtn.addEventListener('mouseleave', () => { ttTimer = setTimeout(hideTooltip, 220); });
+    infoBtn.addEventListener('focus', () => showTooltip());
+    infoBtn.addEventListener('blur', () => hideTooltip());
+
+    // Click opens modal for more detail (and keyboard enter/space)
+    function openModal(){
+      overlay.classList.add('open'); overlay.setAttribute('aria-hidden','false');
+      modalClose && modalClose.focus();
+    }
+    function closeModal(){
+      overlay.classList.remove('open'); overlay.setAttribute('aria-hidden','true');
+      infoBtn && infoBtn.focus();
+    }
+
+    infoBtn.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
+    infoBtn.addEventListener('keydown', (e) => { if(e.key==='Enter' || e.key===' ') { e.preventDefault(); openModal(); } });
+
+    // close handlers
+    overlay.addEventListener('click', function(e){
+      if(e.target === overlay) closeModal();
+    });
+    modalClose && modalClose.addEventListener('click', closeModal);
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+    });
+  })();
+  </script>
+
+  <!-- ===== Minimal category → welcome updater (keeps original behaviour) ===== -->
+  <script>
+  const CATEGORY_CONTENT = {
+    "Personal & Lifestyle": {
+      head: "Personal & Lifestyle",
+      sub: "Loans for personal needs — consumer, education, medical, and more.",
+      tabs: ["Personal Loan","Consumer Durable","Education","Medical"],
+      page: null  // Stay on dashboard
+    },
+    "Vehicle & Transport": {
+      head: "Vehicle & Transport",
+      sub: "Car loans, two-wheeler loans and transport finance with EMI planning.",
+      tabs: ["Car Loan","Two-wheeler","Commercial Vehicle","Loan Against Vehicle"],
+      page: null  // Stay on dashboard
+    },
+    "Property & Housing": {
+      head: "Property & Housing",
+      sub: "Home purchase, renovation, plot loans and accurate EMI visualizations.",
+      tabs: ["Home Loan","Home Renovation","Plot Loan","Loan Against Property"],
+      page: null  // Stay on dashboard
+    },
+    "Business": {
+      head: "Business Loans",
+      sub: "Working capital, machinery finance and tailored lending solutions.",
+      tabs: ["Working Capital","Machinery","Invoice Discounting","MSME Loan"],
+      page: null  // Stay on dashboard
+    },
+    "Secured / Unsecured": {
+      head: "Secured & Unsecured Loans",
+      sub: "Compare secured and unsecured loan types, benefits, and requirements.",
+      tabs: ["Overview","Comparison","Requirements","Documents"],
+      page: "loan.html"  // Navigate to loan.html
+    },
+    "News & Updates": {
+      head: "Latest Financial News & Updates",
+      sub: "Stay informed with the latest banking, RBI, NBFC, and lending news.",
+      tabs: ["All News","RBI Updates","Market News","Loan Products"],
+      page: "news.html"  // Navigate to news.html
+    }
+  };
+  
+  // Find UI elements
+  function findLeftUi() {
+    const headSelectors = ['#welcomeHead', '.welcome-head', '.card h2', 'h2.welcome-head', 'h2'];
+    const subSelectors = ['#welcomeSub', '.welcome-sub', '.card .welcome-sub', '.card p', '.card .sub'];
+    const tabsSelectors = ['#leftTabs', '.tabs', '.card .tabs', '.tabs-container'];
+    let head = null, sub = null, tabs = null;
+    for(const s of headSelectors) {
+      const el = document.querySelector(s);
+      if(el && el.textContent && el.textContent.toLowerCase().includes('welcome')) { head = el; break; }
+    }
+    if(!head) {
+      const leftCard = document.querySelector('.left-compact .card') || document.querySelector('.card');
+      if(leftCard) head = leftCard.querySelector('h2') || leftCard.querySelector('h3');
+    }
+    for(const s of subSelectors) { if(!sub) sub = document.querySelector(s); }
+    for(const s of tabsSelectors) { if(!tabs) tabs = document.querySelector(s); }
+    if(!sub && head) {
+      const leftCard = head.closest('.card');
+      if(leftCard) sub = leftCard.querySelector('p') || leftCard.querySelector('.welcome-sub');
+    }
+    return { head, sub, tabs };
+  }
+  
+  function safeText(t){ return (t == null) ? '' : String(t); }
+  
+  function setTabs(tabsEl, items) {
+    if(!tabsEl) return;
+    tabsEl.innerHTML = '';
+    items.forEach(label => {
+      const d = document.createElement('div');
+      d.className = 'tab';
+      d.textContent = label;
+      tabsEl.appendChild(d);
+    });
+  }
+  
+  // Match category function
+  function matchCategory(node) {
+    const keys = Object.keys(CATEGORY_CONTENT);
+    if(node.id && keys.includes(node.id)) return node.id;
+    const text = (node.textContent || '').trim();
+    for(const k of keys) {
+      if(text === k) return k;
+    }
+    for(const k of keys) {
+      if(text.toLowerCase().includes(k.toLowerCase())) return k;
+    }
+    return null;
+  }
+  
+  // Handle category click
+  function handleCategoryClick(node) {
+    const key = matchCategory(node);
+    if(!key) return;
+    
+    const cfg = CATEGORY_CONTENT[key];
+    
+    // Handle navigation first
+    if (cfg.page) {
+      window.location.href = cfg.page;
+      return;
+    }
+    
+    // Update UI content for dashboard categories
+    const { head, sub, tabs } = findLeftUi();
+    if(head) head.textContent = safeText(cfg.head);
+    if(sub) sub.textContent = safeText(cfg.sub);
+    const tabsEl = tabs || document.querySelector('#leftTabs') || document.querySelector('.tabs');
+    if(tabsEl && Array.isArray(cfg.tabs)) setTabs(tabsEl, cfg.tabs);
+    
+    // Update active state
+    const candidates = Array.from(document.querySelectorAll('.sidebar .nav-item'));
+    candidates.forEach(c => c.classList && c.classList.remove('active'));
+    node.classList && node.classList.add('active');
+  }
+  
+  // Wire category clicks
+  function wireCategoryClicks() {
+    const { head, sub, tabs } = findLeftUi();
+    if(!head) {
+      console.warn('Category-wiring: cannot find left heading element. Aborting category updater.');
+      return;
+    }
+    
+    const candidates = Array.from(document.querySelectorAll('.sidebar .nav-item'));
+    candidates.forEach(node => {
+      const key = matchCategory(node);
+      if(!key) return;
+      
+      // Add click handler
+      node.addEventListener('click', function(e) {
+        e.preventDefault();
+        handleCategoryClick(this);
+      });
+      
+      // Add keyboard handler
+      node.addEventListener('keydown', function(e) {
+        if(e.key === 'Enter' || e.key === ' ') { 
+          e.preventDefault(); 
+          handleCategoryClick(this);
+        }
+      });
+    });
+  }
+  
+  // Initialize when DOM is ready
+  if(document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireCategoryClicks);
+  } else {
+    setTimeout(wireCategoryClicks, 120);
+  }
+  </script>
+
+</body>
+</html>

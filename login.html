@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Smart EMI — Login</title>
+  <style>
+    :root{--bg:#0b0e17;--panel:#111425;--muted:#bfc8d6;--accent:#7f63ff;--accent2:#6fb7ff}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--bg),#07101a);color:var(--muted);font-family:Inter,Arial,system-ui}
+    .modal{width:520px;max-width:94%;background:linear-gradient(180deg,#fff,#fbfdff);border-radius:12px;padding:22px;color:#071018;box-shadow:0 20px 60px rgba(3,8,18,0.7)}
+    h2{margin:0 0 8px;font-family:'Playfair Display',serif;color:#071423;text-align:center}
+    label{display:block;margin:10px 0 6px;color:#24333f;font-size:13px}
+    input[type="email"],input[type="password"]{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(3,12,20,0.07);background:#f2f8fb}
+    .signin-btn{margin-top:16px;width:100%;padding:12px;border-radius:12px;border:0;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#031221;box-shadow:0 12px 26px rgba(50,40,120,0.12)}
+    .muted{font-size:13px;color:#2b3d49;text-align:center;margin-top:10px}
+    .alert{margin-top:12px;padding:10px;border-radius:10px;font-size:13px}
+    .alert.error{background:#fff1f2;color:#5b1d1f}
+    .alert.success{background:#e6fff4;color:#083f2e}
+    .hint{font-size:13px;color:rgba(2,13,22,0.65);text-align:center;margin-top:10px}
+    .link{color:var(--accent);text-decoration:none;font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="modal" role="dialog" aria-labelledby="loginTitle">
+    <h2 id="loginTitle">Sign in to Smart EMI</h2>
+
+    <div>
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="you@example.com" value="">
+    </div>
+
+    <div>
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="••••••••">
+    </div>
+
+    <button id="signInBtn" class="signin-btn">Sign in</button>
+
+    <div id="message" aria-live="polite"></div>
+
+    <div class="hint">Or <a href="create-account.html" class="link">Create account</a></div>
+
+  </div>
+
+<script>
+  const API_BASE = "http://127.0.0.1:5000"; // adjust if your backend runs elsewhere
+  const signInBtn = document.getElementById('signInBtn');
+  const emailEl = document.getElementById('email');
+  const pwdEl = document.getElementById('password');
+  const msg = document.getElementById('message');
+
+  function showMessage(text, type='error'){
+    msg.innerHTML = `<div class="alert ${type==='error' ? 'error' : 'success'}">${text}</div>`;
+  }
+
+  async function doLogin(){
+    const email = (emailEl.value || '').trim();
+    const password = pwdEl.value || '';
+
+    if(!email || !password){
+      showMessage('Please enter both email and password', 'error');
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE + '/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      // prefer JSON response
+      let payload = null;
+      try { payload = await res.json(); } catch(e) { payload = null; }
+
+      if(res.ok){
+        // server says OK — if backend provides redirect use it, else go to dashboard
+        const redirect = (payload && payload.redirect) ? payload.redirect : '/dashboard.html';
+        showMessage('Login successful — redirecting...', 'success');
+        
+        // Store user information in localStorage
+        if (payload && payload.user) {
+          localStorage.setItem('currentUser', JSON.stringify(payload.user));
+        }
+        
+        // slight delay so user sees the message
+        setTimeout(()=> { window.location.href = redirect; }, 700);
+        return;
+      }
+
+      // non-200: show server message if any
+      const errText = (payload && (payload.error || payload.message || payload.detail)) || res.statusText || 'Login failed';
+      showMessage('Login failed: ' + errText, 'error');
+
+    } catch (e) {
+      // network / no backend reachable: show error message
+      console.warn('Login fetch error:', e);
+      showMessage('Cannot reach server. Please check your connection and try again.', 'error');
+    }
+  }
+
+  signInBtn.addEventListener('click', doLogin);
+  pwdEl.addEventListener('keydown', (e)=> { if(e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OTP Input Test</title>
+</head>
+<body>
+    <h1>OTP Input Test</h1>
+    
+    <label for="otp">Enter OTP:</label>
+    <input type="text" id="otp" maxlength="6" placeholder="Enter 6 digits">
+    <button onclick="checkInput()">Check Input</button>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+    
+    <script>
+        function checkInput() {
+            const otpInput = document.getElementById('otp');
+            const resultDiv = document.getElementById('result');
+            
+            const rawValue = otpInput.value;
+            const trimmedValue = rawValue.trim();
+            
+            resultDiv.innerHTML = `
+                <p><strong>Raw Value:</strong> "${rawValue}" (length: ${rawValue.length})</p>
+                <p><strong>Trimmed Value:</strong> "${trimmedValue}" (length: ${trimmedValue.length})</p>
+                <p><strong>Has Spaces:</strong> ${rawValue !== trimmedValue ? 'Yes' : 'No'}</p>
+            `;
+        }
+        
+        // Add event listener to show real-time input
+        document.getElementById('otp').addEventListener('input', function(e) {
+            console.log('Input event:', e.target.value);
+        });
+    </script>
+</body>
+</body>
+</html>

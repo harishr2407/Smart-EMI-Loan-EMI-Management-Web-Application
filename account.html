@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Account</title>
+  <style>
+    :root{
+      --panel:#ffffff; --muted:#6b7280; --accent:#5b8bf7;
+      --bg:#071021;
+    }
+    body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,#061022,#071021);color:#051026}
+    .wrap{max-width:380px;margin:28px auto}
+    .card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(2,6,23,0.25)}
+    .header{display:flex;align-items:center;gap:12px}
+    .avatar{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6be3ff,#5b8bf7);font-weight:800;color:#042235}
+    .meta .name{font-weight:700}
+    .meta .email{font-size:13px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+    .meta .role{display:inline-block;margin-top:8px;padding:6px 8px;background:#eef6ff;border-radius:999px;color:#1b334a;font-size:12px}
+
+    .items{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+    .item{display:flex;align-items:center;gap:12px;padding:11px;border-radius:8px;cursor:pointer;background:#f8fafc;border:1px solid #eef2ff;text-decoration:none;color:inherit}
+    .item:hover{background:#eef6ff}
+
+    .item .text{font-weight:600}
+    .small{font-size:13px;color:var(--muted);margin-top:10px;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="dialog" aria-label="Account">
+      <div class="header">
+        <div class="avatar" id="avatarInitial">A</div>
+        <div class="meta">
+          <div class="name" id="userName">Anja Kumar N</div>
+          <div class="email" id="userEmail">innocentdecent71@gmail.com</div>
+          <div class="role" id="userRole">Role: User</div>
+        </div>
+      </div>
+
+      <div class="items" role="menu" aria-label="Account actions">
+        <!-- Dashboard -->
+        <a class="item" href="dashboard.html" id="actionDashboard" role="menuitem">
+          <svg width="18" height="18" style="flex:0 0 18px" viewBox="0 0 24 24" fill="none"><path d="M3 13h8V3H3v10zM13 21h8V11h-8v10zM13 3v6h8V3h-8zM3 21h8v-8H3v8z" stroke="#0b1220" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="text">Dashboard</div>
+        </a>
+
+        <!-- Edit Password -->
+        <a class="item" href="edit-password.html" id="actionEdit" role="menuitem">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 11c1.657 0 3 1.343 3 3v3H9v-3c0-1.657 1.343-3 3-3zM7 10V8a5 5 0 1110 0v2" stroke="#0b1220" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="text">Edit password</div>
+        </a>
+
+        <!-- Logout -->
+        <a class="item" href="#" id="actionLogout" role="menuitem">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M16 17l5-5-5-5M21 12H9M13 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h7" stroke="#0b1220" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="text">Logout</div>
+        </a>
+      </div>
+
+      <div class="small">Signed in as <strong id="footerEmail">innocentdecent71@gmail.com</strong></div>
+    </div>
+  </div>
+
+<script>
+  // If you want to dynamically fill from session/user object
+  const user = { name:'Anja Kumar N', email:'innocentdecent71@gmail.com', role:'User' };
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('userEmail').textContent = user.email;
+  document.getElementById('footerEmail').textContent = user.email;
+  document.getElementById('userRole').textContent = 'Role: ' + user.role;
+  document.getElementById('avatarInitial').textContent = (user.name||'U').trim().charAt(0).toUpperCase();
+
+  // Logout logic: clear local/session storage and redirect to login page
+  document.getElementById('actionLogout').addEventListener('click', function(e){
+    e.preventDefault();
+    if(!confirm('Are you sure you want to logout?')) return;
+    // example cleanup — adapt to your auth implementation:
+    try { localStorage.removeItem('authToken'); sessionStorage.clear(); } catch(e){/*ignore*/}
+    // redirect to login page
+    window.location.href = 'login.html';
+  });
+</script>
+</body>
+</html>

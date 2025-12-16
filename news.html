@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Daily Fintech News — Smart EMI</title>
+<style>
+:root{--bg:#071021;--muted:#98a0b3}*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#dcefff;background:linear-gradient(180deg,#061022 0%, #071021 100%)}.app{display:flex;min-height:100vh}.sidebar{width:260px;padding:18px;border-right:1px solid rgba(255,255,255,0.04);color:#c9d6ee;overflow:auto;background:linear-gradient(180deg,#0e1724,#091220)}.icon{width:22px;height:22px;margin-right:10px;display:inline-block}.nav-item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:8px;cursor:pointer;color:#c9d6ee}.nav-item:hover{background:rgba(255,255,255,0.02)}.main{flex:1;padding:22px;overflow:auto}.topbar{display:flex;align-items:center;gap:16px;margin-bottom:10px}h1{margin:0;font-size:28px;color:#eaf6ff}.subtitle{color:var(--muted);margin-top:6px}.back-btn{background:#1f2a38;color:#cfe8ff;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);cursor:pointer}.filters{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}.chip{background:#152033;padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.02);cursor:pointer;color:#dbeeff;font-size:13px}.chip.active{background:linear-gradient(90deg,#5b8bf7,#6bc7ff);color:#042235}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:18px}.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 8px 30px rgba(0,0,0,0.6);display:flex;flex-direction:column;justify-content:space-between}.card-thumb{height:160px;border-radius:8px;overflow:hidden;background:#071022;display:flex;align-items:center;justify-content:center;cursor:pointer}.card-thumb img{width:100%;height:100%;object-fit:cover;display:block}.meta{display:flex;gap:12px;color:var(--muted);font-size:13px;margin-top:8px;align-items:center}.meta .src{background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:8px}.card h3{margin:8px 0;font-size:16px;color:#f0fbff}.desc{color:#cfe6ff;font-size:14px;line-height:1.25;height:48px;overflow:hidden}.actions{margin-top:12px}.btn-read{padding:8px 12px;border-radius:8px;border:0;cursor:pointer;font-size:13px;background:linear-gradient(90deg,#7cd0ff,#6b8bf7);color:#042235}.muted{color:var(--muted)}@media (max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}.sidebar{display:none}}@media (max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- Removed categories sidebar as requested -->
+    <main class="main">
+      <div class="topbar">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:12px">
+            <h1>Daily Fintech News</h1>
+            <div class="subtitle">Banking, RBI, NBFC, lending, EMI & APR updates.</div>
+          </div>
+        </div>
+        <button id="backToDash" class="back-btn">← Back to Dashboard</button>
+      </div>
+
+      <div class="filters" id="filterRow"></div>
+
+      <div style="margin-top:12px">
+        <input id="searchBox" placeholder="Search headlines..." style="width:36%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:#eaf6ff" />
+      </div>
+
+      <div id="loading" class="muted" style="margin-top:18px;">Loading news...</div>
+      <div id="grid" class="grid" style="display:none"></div>
+      <div id="empty" class="muted" style="margin-top:18px;display:none">No headlines found.</div>
+    </main>
+  </div>
+
+<script>
+// Use relative URL to work with any host
+const API_ENDPOINT = '/news?limit=20';
+
+const grid = document.getElementById('grid');
+const searchBox = document.getElementById('searchBox');
+const filterRow = document.getElementById('filterRow');
+const emptyEl = document.getElementById('empty');
+const backToDash = document.getElementById('backToDash');
+const loadingEl = document.getElementById('loading');
+
+let newsItems = [];
+let currentFiltered = [];
+let activeFilter = 'all';
+
+function renderFilters(categories) {
+  // Clear existing filters except 'All'
+  filterRow.innerHTML = '<div class="chip active" data-filter="all">All</div>';
+  
+  // Add category filters
+  categories.forEach(category => {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.textContent = category;
+    chip.dataset.filter = category;
+    // We'll handle clicks via event delegation on filterRow instead of adding individual listeners
+    filterRow.appendChild(chip);
+  });
+}
+
+function escapeHtml(s){ return (s||'').toString().replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+async function fetchNews(){
+  // Show loading indicator
+  if (loadingEl) loadingEl.style.display = 'block';
+  if (grid) grid.style.display = 'none';
+  if (emptyEl) emptyEl.style.display = 'none';
+  
+  try{
+    console.log('Fetching news from endpoint:', API_ENDPOINT);
+    const res = await fetch(API_ENDPOINT, { credentials: 'same-origin' });
+    console.log('Response status:', res.status);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    console.log('Data received:', data.length, 'items');
+    if(!Array.isArray(data)) throw new Error('Bad data format');
+    newsItems = data.slice(0, 50);
+    console.log('newsItems set to:', newsItems.length, 'items');
+    // Log first item to check its structure
+    if (newsItems.length > 0) {
+      console.log('First item:', newsItems[0]);
+    }
+    // Extract unique categories for filter chips
+    const categories = [...new Set(data.map(item => item.category || 'Other'))];
+    console.log('Categories extracted:', categories);
+    renderFilters(categories);
+    renderNews();
+  } catch(err){
+    console.error('fetchNews error:', err);
+    newsItems = [{
+      title: 'News unavailable — check backend /news',
+      source: { name: 'System' },
+      url: '#',
+      description: 'Cannot fetch news from server. Open /news to inspect JSON.',
+      image: '',
+      category: 'Error'
+    }];
+    renderFilters(['Error']);
+    renderNews();
+  } finally {
+    // Hide loading indicator
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (grid) grid.style.display = 'grid';
+  }
+}
+
+function renderNews(){
+  // Check if required elements exist
+  if (!grid || !searchBox || !emptyEl) {
+    console.error('Required DOM elements not found');
+    return;
+  }
+  
+  const q = (searchBox.value||'').trim().toLowerCase();
+  const filtered = newsItems.filter(it=>{
+    const cat = (it.category||'').toLowerCase();
+    const src = (it.source && it.source.name || '').toLowerCase();
+    const matchesFilter = activeFilter === 'all' || cat.includes(activeFilter.toLowerCase()) || src.includes(activeFilter.toLowerCase());
+    const text = ((it.title||'') + ' ' + (it.description||'')).toLowerCase();
+    const matchesQ = !q || text.includes(q);
+    return matchesFilter && matchesQ;
+  });
+  currentFiltered = filtered;
+  grid.innerHTML = '';
+
+  if(!filtered.length){
+    emptyEl.style.display = 'block';
+    return;
+  } else {
+    emptyEl.style.display = 'none';
+  }
+
+  filtered.forEach((a, idx) => {
+    const img = a.image || '';
+    const safeTitle = escapeHtml(a.title || '');
+    const safeDesc = escapeHtml(a.description || '');
+    const safeSrc = escapeHtml((a.source && a.source.name) || 'Source');
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    // Store the URL directly in the button's data attribute to avoid issues with currentFiltered array
+    // Don't escape URLs as they're used as data attributes
+    card.innerHTML = `
+      <div class="card-thumb" data-url="${a.url || '#'}" data-idx="${idx}">
+        ${ img ? `<img src="${escapeHtml(img)}" alt="thumb">` : `<div style="color:var(--muted)">No image</div>` }
+      </div>
+      <div class="meta"><div class="src">${safeSrc}</div></div>
+      <h3 data-url="${a.url || '#'}" data-idx="${idx}">${safeTitle}</h3>
+      <div class="desc">${safeDesc}</div>
+      <div class="actions">
+        <button class="btn-read" data-url="${a.url || '#'}" data-idx="${idx}">Read</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Use setTimeout to ensure DOM is fully updated before attaching handlers
+  setTimeout(() => {
+    attachHandlers();
+  }, 0);
+}
+
+function attachHandlers(){
+  const readButtons = grid.querySelectorAll('.btn-read');
+  readButtons.forEach(b=>{
+    b.onclick = () => {
+      const url = b.dataset.url;
+      if(!url || url === '#'){ alert('No source link available — open /news to debug.'); return; }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    };
+  });
+
+  const clickableElements = grid.querySelectorAll('.card-thumb, h3');
+  clickableElements.forEach(el=>{
+    el.onclick = () => {
+      const url = el.dataset.url;
+      if(!url || url === '#'){ alert('No source link available — open /news to debug.'); return; }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    };
+  });
+}
+
+// Event delegation for filter chips (since they are dynamically generated)
+filterRow.addEventListener('click', (e) => {
+  if (e.target.classList.contains('chip')) {
+    filterRow.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    e.target.classList.add('active');
+    activeFilter = e.target.dataset.filter || 'all';
+    renderNews();
+  }
+});
+
+searchBox.addEventListener('input', renderNews);
+backToDash.addEventListener('click', ()=> window.location.href = '/dashboard.html');
+
+// Fetch news when DOM is loaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', fetchNews);
+} else {
+  fetchNews();
+}
+</script>
+</body>
+</html>

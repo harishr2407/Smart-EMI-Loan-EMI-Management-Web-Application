@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Loans — Secured & Unsecured</title>
+<style>
+  /* Updated CSS to match dashboard.html design */
+  :root{
+    --bg:#0b0e17; --card:#0f1724; --muted:#98a0b3; --accent:#5b8bf7; --border: rgba(255,255,255,0.04);
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family:Inter,system-ui,Arial;
+    background:linear-gradient(180deg,#061022 0%, #071021 100%);
+    margin:0;
+    color:#d6e0f0;
+    padding:18px;
+  }
+  .wrap{
+    /* Removed max-width to make it full screen */
+    margin:0;
+    gap:16px;
+    display:grid;
+    grid-template-columns:1fr 360px;
+  }
+  header{
+    grid-column:1/-1;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .card{
+    background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);
+    border-radius:12px;
+    padding:18px;
+    border:1px solid var(--border);
+    box-shadow:0 6px 20px rgba(0,0,0,0.6);
+  }
+  h1{margin:0;font-size:20px}
+  h3{margin:0 0 8px 0;color:#eaf6ff}
+  .small{color:var(--muted);font-size:13px}
+  .cols{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-top:12px;
+  }
+  .list{
+    margin:10px 0;
+    padding-left:18px;
+  }
+  .list li{
+    margin-bottom:6px;
+  }
+  .preset{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:8px;
+  }
+  .btn{
+    padding:8px 10px;
+    border-radius:8px;
+    border:0;
+    background:linear-gradient(90deg,#5b8bf7,#6bc7ff);
+    color:#04122a;
+    cursor:pointer;
+    font-weight:600;
+  }
+  .ghost{
+    background:transparent;
+    border:1px solid rgba(255,255,255,0.06);
+    color:#e6f0ff;
+  }
+  .meta{
+    font-size:13px;
+    color:var(--muted);
+    margin-top:8px;
+    font-weight:600;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+    background:transparent;
+  }
+  th,td{
+    padding:10px 12px;
+    text-align:left;
+    border-bottom:1px solid rgba(255,255,255,0.03);
+    font-size:14px;
+    color:#e5eefc;
+  }
+  thead th{
+    background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);
+    color:#d7e8ff;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+  }
+  .badge{
+    display:inline-block;
+    padding:6px 8px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.02);
+    color:#c9d6ee;
+    font-weight:700;
+    border:1px solid rgba(255,255,255,0.03);
+  }
+  @media (max-width:980px){ 
+    .wrap{grid-template-columns:1fr} 
+    .cols{grid-template-columns:1fr} 
+  }
+  
+  /* Back button style */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: transparent;
+    color: #c9d6ee;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+  .back-btn:hover {
+    background: rgba(255,255,255,0.02);
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Loan Types — Secured & Unsecured</h1>
+        <div class="small">Overview, benefits, documents and quick EMI presets. Click a preset to pre-fill typical rate & tenure info (display only).</div>
+      </div>
+      <div>
+        <!-- Fixed: Changed to go back to dashboard instead of opening in new tab -->
+        <a class="back-btn" href="dashboard.html">← Back to Dashboard</a>
+      </div>
+    </header>
+
+    <!-- LEFT: Main content with both sections -->
+    <main class="card">
+      <div class="cols">
+        <!-- SECURED -->
+        <section>
+          <h3>🔒 Secured Loans</h3>
+          <div class="small">Require collateral (property, vehicle, gold, FD). Lower rates; larger loans; longer tenures.</div>
+
+          <div class="meta">Common types</div>
+          <ul class="list">
+            <li><strong>Home Loan</strong> — Collateral: property; long tenure.</li>
+            <li><strong>Loan Against Property (LAP)</strong> — Use property to unlock liquidity.</li>
+            <li><strong>Vehicle Loan</strong> — Collateral: car/two-wheeler; faster processing.</li>
+            <li><strong>Gold / FD Loan</strong> — Small ticket, instant disbursal.</li>
+          </ul>
+
+          <div class="meta">Benefits</div>
+          <ul class="list">
+            <li>Lower interest rates</li>
+            <li>Higher loan amounts</li>
+            <li>Longer repayment terms</li>
+          </ul>
+
+          <div class="meta">Typical documents</div>
+          <ul class="list">
+            <li>ID (Aadhaar/PAN), Address proof</li>
+            <li>Property papers / RC for vehicle</li>
+            <li>Income proof (salary slips / bank statements)</li>
+            <li>Collateral valuation report (for property)</li>
+          </ul>
+
+          <div style="margin-top:10px">
+            <div class="meta">Quick presets (demo only)</div>
+            <div class="preset">
+              <button class="ghost" data-type="home" data-rate="8.0" data-years="20">Home (8%)</button>
+              <button class="ghost" data-type="lap" data-rate="10.0" data-years="5">LAP (10%)</button>
+              <button class="ghost" data-type="vehicle" data-rate="9.0" data-years="5">Car (9%)</button>
+              <button class="ghost" data-type="gold" data-rate="7.5" data-years="1">Gold (7.5%)</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- UNSECURED -->
+        <section>
+          <h3>🔓 Unsecured Loans</h3>
+          <div class="small">No collateral required. Faster approvals but higher interest rates. Lenders rely on credit score & income.</div>
+
+          <div class="meta">Common types</div>
+          <ul class="list">
+            <li><strong>Personal Loan</strong> — Quick, for any purpose.</li>
+            <li><strong>Education Loan (no collateral)</strong> — For studies, sometimes unsecured for small amounts.</li>
+            <li><strong>Medical / Emergency Loan</strong> — Rapid disbursal.</li>
+            <li><strong>Consumer Durable</strong> — EMI on products.</li>
+          </ul>
+
+          <div class="meta">Considerations</div>
+          <ul class="list">
+            <li>Higher interest rates vs secured</li>
+            <li>Smaller loan amounts typically</li>
+            <li>Approval depends heavily on credit & income</li>
+          </ul>
+
+          <div style="margin-top:10px">
+            <div class="meta">Quick presets (demo only)</div>
+            <div class="preset">
+              <button class="ghost" data-type="personal" data-rate="14.0" data-years="3">Personal (14%)</button>
+              <button class="ghost" data-type="education" data-rate="11.0" data-years="5">Education (11%)</button>
+              <button class="ghost" data-type="medical" data-rate="16.0" data-years="1">Medical (16%)</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div style="margin-top:14px">
+        <h4>Quick EMI Preview (display only)</h4>
+        <div class="small">Loan amount, rate and tenure shown for preview. Fees & Charges remain a separate input in your main dashboard (this preview doesn't change your dashboard values).</div>
+
+        <table>
+          <thead><tr><th>Loan type</th><th>Rate p.a.</th><th>Tenure (years)</th><th>Sample EMI for ₹10,00,000</th></tr></thead>
+          <tbody id="previewRows">
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- RIGHT: small utilities / notes -->
+    <aside class="card">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>Secured vs Unsecured</strong></div>
+          <div class="badge">Overview</div>
+        </div>
+
+        <p class="small" style="margin-top:8px">
+          Secured = collateral. Unsecured = no collateral. Choose secured for lower rate/long tenure; choose unsecured for speed & no collateral.
+        </p>
+
+        <div style="margin-top:10px">
+          <strong>Fees guidance</strong>
+          <div class="small">For ₹10,00,000 loan, we recommend minimum fees ≥ ₹1,000. Typical fees can be 0.25%–1% of loan amount depending on lender.</div>
+        </div>
+
+        <div style="margin-top:12px">
+          <strong>Useful actions</strong>
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <!-- Fixed: Changed to go back to dashboard instead of opening in new tab -->
+            <a href="news.html" class="btn ghost">Open Latest News</a>
+            <button id="downloadGuide" class="btn">Download Guide</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+<script>
+  // small EMI helper (ordinary annuity)
+  function emi(P, annualRate, years){
+    const n = Math.max(1, Math.round(years*12));
+    const r = (annualRate/100)/12;
+    if(r === 0) return Math.round(P/n);
+    const pow = Math.pow(1+r,n);
+    const e = P * r * pow / (pow - 1);
+    return Math.round(e);
+  }
+
+  const presets = document.querySelectorAll('.preset button');
+  presets.forEach(b=>{
+    b.addEventListener('click', ()=> {
+      const type = b.dataset.type;
+      const rate = Number(b.dataset.rate);
+      const years = Number(b.dataset.years);
+      // update preview table single row
+      renderPreview(type, rate, years);
+    });
+  });
+
+  function renderPreview(type, rate, years){
+    const tbody = document.getElementById('previewRows');
+    const p = 1000000;
+    const e = emi(p, rate, years);
+    tbody.innerHTML = `<tr><td>${type}</td><td>${rate}%</td><td>${years}</td><td>₹ ${e.toLocaleString('en-IN')}</td></tr>`;
+  }
+
+  // initial populate with common items
+  const initial = [
+    ['Home',8.0,20],
+    ['Car',9.0,5],
+    ['LAP',10.0,5],
+    ['Gold',7.5,1],
+    ['Personal',14.0,3],
+    ['Education',11.0,5]
+  ];
+  const tbody = document.getElementById('previewRows');
+  tbody.innerHTML = initial.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}%</td><td>${r[2]}</td><td>₹ ${emi(1000000,r[1],r[2]).toLocaleString('en-IN')}</td></tr>`).join('');
+
+  document.getElementById('downloadGuide').addEventListener('click', ()=>{
+    const txt = `Secured vs Unsecured quick guide
+
+Secured: collateral -> lower rate
+Unsecured: no collateral -> higher rate
+
+Fees guidance: for ₹10L, min fees ₹1,000 recommended.`;
+    const blob = new Blob([txt], {type:'text/plain'}); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'loan_guide.txt'; a.click(); URL.revokeObjectURL(url);
+  });
+</script>
+</body>
+</html>

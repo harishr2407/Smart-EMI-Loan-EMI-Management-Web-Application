@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Create Account — OTP Demo</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b0e17;color:#e6eef8;font-family:Inter,Arial,system-ui}
+  .card{width:520px;max-width:94%;background:linear-gradient(180deg,#fff,#fbfdff);border-radius:12px;padding:20px;color:#071018;box-shadow:0 18px 40px rgba(2,6,16,0.6)}
+  h2{margin:0 0 8px;font-family:Playfair Display,serif;color:#0c1720;text-align:center}
+  label{display:block;margin:10px 0 6px;color:#24333f;font-size:13px}
+  input[type="text"],input[type="email"],input[type="password"],input[type="tel"]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(3,12,20,0.08);background:#f2f7fb}
+  .row{display:flex;gap:10px;align-items:center}
+  .btn{padding:10px 12px;border-radius:10px;border:0;cursor:pointer;background:linear-gradient(90deg,#7f63ff,#6fb7ff);color:#05212a;font-weight:700}
+  .btn.ghost{background:transparent;border:1px solid rgba(3,12,20,0.06);color:#072033}
+  .create-btn{width:100%;padding:12px;border-radius:12px;border:0;background:linear-gradient(90deg,#bfa8ff,#78d2ff);color:#05212a;font-weight:800;margin-top:12px}
+  .disabled{opacity:0.55;pointer-events:none}
+  .alert{padding:10px;border-radius:8px;margin-top:10px;font-size:13px}
+  .alert.success{background:#e6fff4;color:#083f2e}
+  .alert.error{background:#fff1f2;color:#5b1d1f}
+  .small{font-size:12px;color:#23404a;margin-top:6px}
+  button[disabled]{opacity:0.55;cursor:not-allowed}
+  #debug-info{font-family:monospace;font-size:12px;color:#64707a}
+  /* Added style for the login link */
+  .login-link {
+    display: block;
+    text-align: center;
+    margin-top: 15px;
+    color: #7f63ff;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .login-link:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<div class="card" role="dialog" aria-labelledby="title">
+  <h2 id="title">Create account</h2>
+
+  <form id="createForm" novalidate>
+    <label for="name">Name</label>
+    <input id="name" name="name" type="text" autocomplete="name" required />
+
+    <label for="email">Email</label>
+    <div class="row">
+      <input id="email" name="email" type="email" placeholder="you@email.com" autocomplete="email" required />
+      <button id="sendOtpBtn" type="button" class="btn">Send OTP</button>
+    </div>
+
+    <label for="otp">OTP (6 digits)</label>
+    <div class="row">
+      <input id="otp" name="otp" type="text" inputmode="numeric" maxlength="6" placeholder="Enter OTP" autocomplete="one-time-code" />
+      <button id="verifyOtpBtn" type="button" class="btn ghost">Verify</button>
+    </div>
+    <div id="otpNote" class="small">A 6-digit code will be sent to your email and will expire after 5 minutes.</div>
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required />
+    <div class="small">Use at least 8 characters with uppercase, lowercase, number, and special character.</div>
+
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <input id="location" name="location" type="text" placeholder="Location (optional)" />
+      <input id="phone" name="phone" type="tel" placeholder="Phone (optional)" maxlength="10" />
+    </div>
+
+    <button id="createAccountBtn" class="create-btn disabled" type="button" disabled aria-disabled="true">Create account</button>
+    <div id="debug-info" style="margin-top: 10px;"></div>
+
+    <div id="msg" aria-live="polite" style="min-height:40px"></div>
+    
+    <!-- Added login link -->
+    <a href="login.html" class="login-link">Already have an account? Sign in</a>
+  </form>
+</div>
+
+<script>
+/* Updated front-end behavior with robust checks */
+const API_BASE = window.API_BASE || "http://127.0.0.1:5000";
+
+const sendBtn = document.getElementById('sendOtpBtn');
+const verifyBtn = document.getElementById('verifyOtpBtn');
+const createBtn = document.getElementById('createAccountBtn');
+const msgBox = document.getElementById('msg');
+const debugBox = document.getElementById('debug-info');
+
+let otpVerified = false;
+let messageClearTimer = null;
+
+function resetMessageTimer(){
+  if(messageClearTimer) { clearTimeout(messageClearTimer); messageClearTimer = null; }
+}
+
+/* initialize create btn state consistently */
+function setCreateDisabled(state){
+  createBtn.disabled = state;
+  createBtn.setAttribute('aria-disabled', String(state));
+  if(state){
+    createBtn.classList.add('disabled');
+  } else {
+    createBtn.classList.remove('disabled');
+    createBtn.removeAttribute('aria-disabled');
+  }
+}
+
+/* helpers */
+function logDebug(...parts){
+  const text = parts.map(p => (typeof p === 'object' ? JSON.stringify(p) : String(p))).join(' ');
+  console.log('[APP]', text);
+  if(debugBox) {
+    const now = new Date().toLocaleTimeString();
+    debugBox.innerText = `[${now}] ${text}`;
+  }
+}
+
+function showMessage(text, type='success'){
+  resetMessageTimer();
+  msgBox.innerHTML = `<div class="alert ${type==='success' ? 'success' : 'error'}">${text}</div>`;
+  // clear after a few seconds
+  messageClearTimer = setTimeout(()=>{
+    // only clear if the message hasn't changed (simple safety)
+    if(msgBox && msgBox.firstChild && msgBox.firstChild.textContent === text){
+      msgBox.innerHTML = '';
+    }
+  }, 6000);
+  updateDebugInfo();
+}
+
+function updateDebugInfo(){
+  const pwd = document.getElementById('password').value || '';
+  const email = document.getElementById('email').value || '';
+  debugBox && (debugBox.innerHTML = `OTP Verified: ${otpVerified} | pwdLen: ${pwd.length} | API_BASE: ${API_BASE} | email: ${email}`);
+}
+
+/* localStorage helpers */
+function saveFormData(){
+  try {
+    const formData = {
+      name: document.getElementById('name').value,
+      email: document.getElementById('email').value,
+      location: document.getElementById('location').value,
+      phone: document.getElementById('phone').value
+    };
+    localStorage.setItem('createAccountFormData', JSON.stringify(formData));
+  } catch(e){ console.warn('saveFormData failed', e); }
+}
+function loadFormData(){
+  try {
+    const saved = localStorage.getItem('createAccountFormData');
+    if(!saved) return;
+    const d = JSON.parse(saved);
+    document.getElementById('name').value = d.name || '';
+    document.getElementById('email').value = d.email || '';
+    document.getElementById('location').value = d.location || '';
+    document.getElementById('phone').value = d.phone || '';
+  } catch(e){ console.warn('loadFormData failed', e); }
+}
+function clearSavedFormData(){ localStorage.removeItem('createAccountFormData'); }
+
+/* enable/disable create button based on OTP state and password length */
+function enableCreateIfReady(){
+  const pwd = document.getElementById('password').value || '';
+  const shouldEnable = !!otpVerified && pwd.length >= 6;
+  setCreateDisabled(!shouldEnable);
+  logDebug(shouldEnable ? 'Create button ENABLED' : 'Create button DISABLED');
+  updateDebugInfo();
+}
+
+/* Send OTP */
+async function sendOtp(){
+  const email = (document.getElementById('email').value || '').trim();
+  if(!email){
+    showMessage('Please enter an email before sending OTP', 'error');
+    document.getElementById('email').focus();
+    return;
+  }
+
+  logDebug('Sending OTP to', email);
+  try {
+    const res = await fetch(API_BASE + '/send-otp', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email })
+    });
+
+    // handle CORS or non-JSON
+    const text = await res.text().catch(()=>null);
+    let body = null;
+    try { body = text ? JSON.parse(text) : null; } catch(e){ body = null; }
+
+    logDebug('send-otp response', res.status, body ?? text);
+
+    if(!res.ok){
+      showMessage(`Server failed to send OTP: ${body?.error || body?.detail || res.statusText || text}`, 'error');
+      if(res.status === 0) showMessage('Network/CORS issue — check server and CORS settings.', 'error');
+      return;
+    }
+
+    if(body && body.sent){
+      showMessage('OTP sent successfully. Check your email.', 'success');
+    } else {
+      showMessage('Failed to send OTP: ' + (body?.error || body?.detail || 'Unknown error'), 'error');
+    }
+  } catch (e) {
+    logDebug('send-otp network error', e);
+    showMessage('Failed to send OTP. Please check your network connection and try again.', 'error');
+  }
+}
+
+/* Verify OTP */
+async function verifyOtp(){
+  const email = (document.getElementById('email').value || '').trim();
+  const otpVal = (document.getElementById('otp').value || '').trim();
+  if(!email){ showMessage('Enter email before verifying OTP', 'error'); return; }
+  if(!otpVal){ showMessage('Enter the OTP', 'error'); return; }
+
+  logDebug('verify-otp ->', { email, otpVal });
+  try {
+    const res = await fetch(API_BASE + '/verify-otp', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email, otp: otpVal })
+    });
+
+    const text = await res.text().catch(()=>null);
+    let body = null;
+    try { body = text ? JSON.parse(text) : null; } catch(e){ body = null; }
+
+    logDebug('verify-otp response', res.status, body ?? text);
+
+    if(!res.ok){
+      showMessage('Server error during OTP verification: ' + (body?.error || body?.detail || res.statusText || text), 'error');
+      otpVerified = false;
+      enableCreateIfReady();
+      return;
+    }
+
+    if(body && (body.verified === true || String(body.verified) === 'true')){
+      otpVerified = true;
+      showMessage('OTP verified — you can create the account now.', 'success');
+      enableCreateIfReady();
+      return;
+    }
+
+    otpVerified = false;
+    const reason = body?.error || body?.detail || 'incorrect or expired OTP';
+    showMessage('OTP verification failed: ' + reason, 'error');
+    enableCreateIfReady();
+
+  } catch (e) {
+    logDebug('verify-otp fetch error', e);
+    showMessage('Cannot reach server to verify OTP. Please check your network connection.', 'error');
+    otpVerified = false;
+    enableCreateIfReady();
+  }
+}
+
+/* Create account */
+async function createAccount(){
+  logDebug('createAccount clicked; otpVerified=', otpVerified);
+  if(createBtn.disabled){
+    showMessage('Create button disabled — verify OTP and enter a valid password (≥6 chars).', 'error');
+    return;
+  }
+  if(!otpVerified){
+    showMessage('Please verify OTP first', 'error');
+    return;
+  }
+
+  const name = (document.getElementById('name').value || '').trim();
+  const email = (document.getElementById('email').value || '').trim();
+  const password = document.getElementById('password').value || '';
+  const location = (document.getElementById('location').value || '').trim();
+  const phone = (document.getElementById('phone').value || '').trim();
+
+  if(!name || !email || password.length < 8){
+    showMessage('Enter name, email and a password (min 8 chars)', 'error');
+    return;
+  }
+  
+  // Check for at least one uppercase letter
+  if (!/[A-Z]/.test(password)) {
+    showMessage('Password must contain at least one uppercase letter.', 'error');
+    return;
+  }
+  
+  // Check for at least one lowercase letter
+  if (!/[a-z]/.test(password)) {
+    showMessage('Password must contain at least one lowercase letter.', 'error');
+    return;
+  }
+  
+  // Check for at least one digit
+  if (!/\d/.test(password)) {
+    showMessage('Password must contain at least one number.', 'error');
+    return;
+  }
+  
+  // Check for at least one special character
+  if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) {
+    showMessage('Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?).', 'error');
+    return;
+  }
+
+  const payload = { name, email, password, location, phone };
+  logDebug('create-account ->', { name, email, location, phone, password: '***' });
+
+  try {
+    showMessage('Creating account...', 'success');
+    const res = await fetch(API_BASE + '/create-account', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    const text = await res.text().catch(()=>null);
+    let body = null;
+    try { body = text ? JSON.parse(text) : null; } catch(e){ body = null; }
+
+    logDebug('create-account response', res.status, body ?? text);
+
+    if(res.ok){
+      showMessage('Account created successfully! Redirecting to login...', 'success');
+      // clear sensitive fields & saved data
+      document.getElementById('password').value = '';
+      document.getElementById('otp').value = '';
+      otpVerified = false;
+      enableCreateIfReady();
+      clearSavedFormData();
+      
+      // Automatically redirect to login page after successful account creation
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 2000);
+      return;
+    } else {
+      const errText = body?.error || body?.detail || res.statusText || text;
+      showMessage('Create failed: ' + errText, 'error');
+      if(String(errText).toLowerCase().includes('otp')) {
+        showMessage('Server reports OTP not verified — ensure you clicked Verify and server returned verified=true.', 'error');
+      }
+      return;
+    }
+  } catch (e) {
+    logDebug('create-account network error', e);
+    showMessage('Cannot reach server to create account. Check API_BASE, server, and CORS.', 'error');
+  }
+}
+
+/* Event wiring */
+sendBtn.addEventListener('click', sendOtp);
+verifyBtn.addEventListener('click', verifyOtp);
+createBtn.addEventListener('click', createAccount);
+
+// Save form data when user types (non-sensitive)
+['name','email','location','phone'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', saveFormData);
+});
+
+// Password input should re-evaluate button state
+const passwordField = document.getElementById('password');
+if(passwordField){
+  passwordField.addEventListener('input', function(e){
+    enableCreateIfReady();
+    saveFormData();
+  });
+}
+
+// OTP input listener
+const otpField = document.getElementById('otp');
+if(otpField){
+  otpField.addEventListener('input', function(){
+    // Just update debug info
+    updateDebugInfo();
+  });
+}
+
+// restore saved data and set initial state
+window.addEventListener('load', function(){
+  logDebug('Page loaded; initializing form');
+  loadFormData();
+  // make sure button reflects initial state
+  setCreateDisabled(true);
+  enableCreateIfReady();
+  updateDebugInfo();
+});
+
+// periodic debug refresh
+setInterval(updateDebugInfo, 3000);
+
+logDebug('create-account script loaded. API_BASE=', API_BASE);
+
+</script>
+</body>
+</html>
